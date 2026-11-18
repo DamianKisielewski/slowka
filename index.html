@@ -180,7 +180,8 @@
   }
 
   /* ---------- Ekran startowy ---------- */
-  .start-head { padding: 24px 0 28px; }
+  .start-head { position: relative; padding: 24px 0 28px; }
+  .start-head .help-btn { position: absolute; top: 24px; right: 0; }
   .field + .field { margin-top: 24px; }
   .field-label { display: flex; align-items: center; gap: 8px; font: 600 15px/20px var(--font-sans); margin-bottom: 10px; }
   .field-label .ico { color: var(--brand); }
@@ -381,6 +382,18 @@
   .mastered .title { display: flex; align-items: center; gap: 8px; font: 600 15px/20px var(--font-sans); }
   .mastered .title .ico { color: var(--sun); }
 
+  /* ---------- Pomoc ---------- */
+  .help-card { display: flex; flex-direction: column; gap: 10px; font: 400 15px/22px var(--font-sans); }
+  .help-card p { margin: 0; }
+  .help-card ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .help-card strong { font-weight: 700; }
+  .help-points { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-variant-numeric: tabular-nums; }
+  .help-points span:nth-child(even) { font-weight: 700; text-align: right; }
+  .help-card.ios { border: 2px solid var(--sun); }
+  .help-card .sub { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+  .help-card .sub .ico { color: var(--brand); }
+  .help-card.ios .sub .ico { color: var(--sun); }
+
   /* ---------- Ekran postępów ---------- */
   .page-head { display: flex; align-items: center; gap: 12px; }
   .word-chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -515,6 +528,7 @@
 <!-- ===== Ekran startowy ===== -->
 <section id="startScreen" class="screen">
   <header class="start-head">
+    <button type="button" id="helpBtn" class="iconbtn help-btn" aria-label="Pomoc – jak działa aplikacja" title="Pomoc"><span class="ico" data-icon="help"></span></button>
     <span class="badge"><span class="ico" data-icon="book" data-size="28"></span></span>
     <h1 class="display xl">Nauka <span class="accent">słówek</span></h1>
     <p class="lead">Uzupełnij brakujące litery w angielskich słowach.</p>
@@ -573,6 +587,88 @@
       <button type="button" id="progressBtn" class="btn secondary"><span class="ico" data-icon="chart"></span>Moje postępy</button>
       <button type="button" id="wordsBtn" class="btn secondary"><span class="ico" data-icon="book"></span>Lista słów</button>
     </div>
+  </div>
+</section>
+
+<!-- ===== Pomoc ===== -->
+<section id="helpScreen" class="screen hidden">
+  <header class="page-head">
+    <button type="button" id="helpBack" class="iconbtn" aria-label="Wróć"><span class="ico" data-icon="back"></span></button>
+  </header>
+  <h1 class="display xl" style="padding-top: 16px;">Jak to <span class="accent">działa?</span></h1>
+
+  <h2 class="section-title"><span class="ico" data-icon="phone"></span>iPhone i iPad – ważne!</h2>
+  <div class="card help-card ios">
+    <p><strong>Wyłącz wyciszenie</strong>, inaczej słowa nie będą czytane na głos. W trybie cichym Safari nie odtwarza mowy.</p>
+    <ul>
+      <li>Przesuń przełącznik z boku telefonu (pomarańczowy pasek oznacza wyciszenie), a w nowszych iPhone'ach wyłącz tryb cichy przyciskiem czynności lub w Centrum sterowania.</li>
+      <li>Podgłośnij telefon przyciskami głośności.</li>
+      <li>Jeśli nadal jest cisza: <strong>Ustawienia → Dostępność → Treść mówiona → Głosy → Angielski</strong> i pobierz dowolny głos.</li>
+    </ul>
+  </div>
+
+  <h2 class="section-title"><span class="ico" data-icon="play"></span>Jak grać</h2>
+  <div class="card help-card">
+    <ul>
+      <li>Widzisz angielskie słowo, w którym brakuje liter. Wpisz je w puste okienka – kursor sam przeskakuje do następnego.</li>
+      <li>Kliknij <strong>Sprawdź</strong> albo naciśnij Enter.</li>
+      <li>Na każde słowo masz <strong>3 próby</strong>. Dobre litery zostają, złe znikają i można spróbować jeszcze raz.</li>
+      <li>Po dobrej odpowiedzi gra sama przechodzi do kolejnego słowa. Po 3 złych próbach pokazuje poprawne słowo.</li>
+      <li>Głośnik przy słowie czyta je na głos po angielsku.</li>
+    </ul>
+  </div>
+
+  <h2 class="section-title"><span class="ico" data-icon="star"></span>Punkty</h2>
+  <div class="card help-card">
+    <div class="help-points">
+      <span>Dobrze za 1. razem</span><span>3 pkt</span>
+      <span>Dobrze za 2. razem</span><span>2 pkt</span>
+      <span>Dobrze za 3. razem</span><span>1 pkt</span>
+      <span>Nie udało się</span><span>0 pkt</span>
+    </div>
+  </div>
+
+  <h2 class="section-title"><span class="ico" data-icon="settings"></span>Ustawienia sesji</h2>
+  <div class="card help-card">
+    <ul>
+      <li><strong>Liczba pytań</strong> – od 1 do 100. Słowa mogą się powtarzać, jeśli pytań jest więcej niż słów.</li>
+      <li><strong>Poziom trudności</strong> – ile liter brakuje w słowie (1, 2 lub 3). Można zaznaczyć kilka poziomów – wtedy słowa są mieszane.</li>
+      <li><strong>Słowa</strong> – „Wszystkie” losuje po równo, „Powtórka” częściej daje słowa, które sprawiają kłopot.</li>
+      <li><strong>Dźwięk</strong> – „Zawsze”, „Po odpowiedzi” (bez podpowiedzi przy wpisywaniu) albo „Wyłączony”.</li>
+      <li><strong>Polskie tłumaczenie</strong> – widoczne od początku albo dopiero po odpowiedzi.</li>
+    </ul>
+    <p class="caption">Ustawienia są zapamiętywane na tym urządzeniu.</p>
+  </div>
+
+  <h2 class="section-title"><span class="ico" data-icon="check"></span>Co można</h2>
+  <div class="card help-card">
+    <ul>
+      <li>Przerwać lekcję strzałką w lewym górnym rogu – odpowiedzi do tej pory zostaną zapisane.</li>
+      <li>Wpisywać małe albo wielkie litery – wielkość liter nie ma znaczenia.</li>
+      <li>Słuchać słowa dowolnie wiele razy (gdy dźwięk jest włączony).</li>
+      <li>W „Liście słów” dodawać, poprawiać, wyłączać i usuwać słowa, a także wkleić wiele słów naraz – jedna linijka to jedno słowo: <strong>angielski, polski</strong>.</li>
+      <li>W „Moich postępach” zobaczyć, które słowa są opanowane, a które trzeba powtórzyć, oraz zrobić kopię zapasową.</li>
+    </ul>
+  </div>
+
+  <h2 class="section-title"><span class="ico" data-icon="warning"></span>Czego nie można</h2>
+  <div class="card help-card">
+    <ul>
+      <li>Pominąć słowa – trzeba spróbować; po 3 próbach gra sama pokaże odpowiedź.</li>
+      <li>Wpisać więcej niż jednej litery w okienko ani cyfr czy polskich znaków – angielskie słowa mają tylko litery a–z.</li>
+      <li>Dodać słowa, które już jest na liście, ani słowa krótszego niż 2 litery.</li>
+      <li>Grać bez żadnego włączonego słowa i bez wybranego poziomu.</li>
+      <li>Przenieść postępy automatycznie – są zapisane tylko w tej przeglądarce. Wyczyszczenie danych przeglądarki je usuwa, dlatego warto zrobić kopię (Eksportuj).</li>
+    </ul>
+  </div>
+
+  <h2 class="section-title"><span class="ico" data-icon="chart"></span>Kiedy słowo jest opanowane?</h2>
+  <div class="card help-card">
+    <p>Każde dobre trafienie <strong>za pierwszym razem</strong> przesuwa słowo wyżej: Nowe → Do powtórki → W trakcie → Opanowane. Pomyłka we wszystkich 3 próbach cofa je do „Do powtórki”.</p>
+  </div>
+
+  <div class="bottom">
+    <button type="button" id="helpDone" class="btn primary block"><span class="ico" data-icon="check"></span>Rozumiem</button>
   </div>
 </section>
 
@@ -843,6 +939,8 @@ const ICON_PATHS = {
   bars1:    '<path d="M6 18v-3"/><path d="M12 18v-7" opacity=".3"/><path d="M18 18V7" opacity=".3"/>',
   bars2:    '<path d="M6 18v-3"/><path d="M12 18v-7"/><path d="M18 18V7" opacity=".3"/>',
   bars3:    '<path d="M6 18v-3"/><path d="M12 18v-7"/><path d="M18 18V7"/>',
+  help:     '<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2-2.4 3.5"/><path d="M12 17v.01"/>',
+  phone:    '<rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 17.5h2"/>',
   info:     '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 8v.01"/>',
   list:     '<path d="M9 6.5h11"/><path d="M9 12h11"/><path d="M9 17.5h11"/><path d="M4.5 6.5v.01"/><path d="M4.5 12v.01"/><path d="M4.5 17.5v.01"/>',
   globe:    '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.5-3.5-8.5s1-6 3.5-8.5z"/>',
@@ -1157,6 +1255,7 @@ const BTN_NEXT = `Dalej<span class="ico">${icon("arrow")}</span>`;
 const $ = (id) => document.getElementById(id);
 const screens = {
   start: $("startScreen"),
+  help: $("helpScreen"),
   game: $("gameScreen"),
   summary: $("summaryScreen"),
   progress: $("progressScreen"),
@@ -1952,6 +2051,9 @@ async function showProgress() {
 }
 
 $("progressBack").addEventListener("click", () => showScreen("start"));
+$("helpBtn").addEventListener("click", () => showScreen("help"));
+$("helpBack").addEventListener("click", () => showScreen("start"));
+$("helpDone").addEventListener("click", () => showScreen("start"));
 
 /* Eksport postępów do pliku JSON */
 $("exportBtn").addEventListener("click", async () => {
