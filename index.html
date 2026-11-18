@@ -304,6 +304,39 @@
   .translation > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
   .feedback { padding-top: 20px; min-height: 84px; }
+
+  /* ---------- Klawiatura ekranowa (urządzenia dotykowe) ---------- */
+  .keyboard { display: flex; flex-direction: column; gap: 8px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+  .kb-row { display: flex; justify-content: center; gap: 5px; }
+  .key {
+    appearance: none;
+    border: 0;
+    flex: 1;
+    max-width: 48px;
+    height: 50px;
+    padding: 0;
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 1px 0 var(--line), var(--shadow-control);
+    font: 700 20px/1 var(--font-sans);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .06s, background-color .06s;
+  }
+  .key.pressed, .key:active { transform: scale(.92); background: var(--brand-soft); }
+  .key.wide { flex: 1.6; max-width: 76px; display: inline-grid; place-items: center; color: var(--ink-muted); background: var(--surface-tint); }
+  .keyboard.off .key { opacity: .4; pointer-events: none; }
+  /* Z klawiaturą na ekranie wszystko musi zmieścić się na telefonie */
+  body.touch-kb #gameScreen { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  body.touch-kb #gameScreen .meta { padding-top: 12px; }
+  body.touch-kb #gameScreen .game-title { padding-top: 10px; font-size: 24px; line-height: 28px; }
+  body.touch-kb #gameScreen .word-card { margin-top: 12px; gap: 12px; padding: 16px; }
+  body.touch-kb #gameScreen .iconbtn.speak { width: 44px; height: 44px; }
+  body.touch-kb #gameScreen .feedback { padding-top: 10px; min-height: 66px; }
+  body.touch-kb #gameScreen .bottom { padding-top: 10px; }
+  body.touch-kb .keyboard { gap: 6px; }
+  body.touch-kb .key { height: 44px; }
   .feedback .card { display: flex; align-items: center; gap: 12px; font: 400 14px/20px var(--font-sans); }
   .feedback strong { font-weight: 700; }
 
@@ -847,6 +880,7 @@
   <div id="feedback" class="feedback" aria-live="polite"></div>
 
   <div class="bottom">
+    <div id="keyboard" class="keyboard hidden" aria-label="Klawiatura"></div>
     <button type="button" id="okBtn" class="btn primary block"></button>
   </div>
 </section>
@@ -1017,6 +1051,7 @@ const ICON_PATHS = {
   warning:  '<path d="M12 4l9 16H3z"/><path d="M12 10v4.5"/><path d="M12 17.5v.01"/>',
   star:     '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"/>',
   arrow:    '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
+  backspace: '<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z"/><path d="M12 9.5l5 5"/><path d="M17 9.5l-5 5"/>',
   back:     '<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>',
   clock:    '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   play:     '<path d="M8 5.5v13l10-6.5z"/>',
@@ -1762,6 +1797,11 @@ function renderQuestion() {
       input.setAttribute("autocorrect", "off");
       input.spellcheck = false;
       input.dataset.answer = ch.toLowerCase();
+      if (TOUCH_KEYBOARD) {
+        // Litery wpisuje się klawiaturą na ekranie – bez klawiatury telefonu
+        input.readOnly = true;
+        input.inputMode = "none";
+      }
       input.setAttribute("aria-label", "brakująca litera");
       attachInputHandlers(input);
       wordEl.appendChild(input);
@@ -1786,7 +1826,9 @@ function renderQuestion() {
 
   updateStats();
   fitWord();
+  activeSlot = game.inputs[0];
   game.inputs[0].focus();
+  updateKeyboard();
 }
 
 /* Dopasowuje rozmiar kafelków, żeby całe słowo zmieściło się w karcie */
@@ -1797,7 +1839,7 @@ function fitWord() {
   // Szerokość w jednostkach kafelka: litera 1, spacja 0.4, odstępy 0.14
   const units = chars.reduce((sum, ch) => sum + (ch === " " ? 0.4 : 1), 0) + 0.14 * (chars.length - 1);
   const available = $("word").clientWidth;
-  const size = Math.max(20, Math.min(56, Math.floor(available / units)));
+  const size = Math.max(20, Math.min(TOUCH_KEYBOARD ? 48 : 56, Math.floor(available / units)));
   $("word").style.setProperty("--t", size + "px");
 }
 window.addEventListener("resize", fitWord);
@@ -1871,6 +1913,68 @@ document.addEventListener("keydown", (e) => {
   e.preventDefault();
   onOkClick();
 });
+
+/* =========================================================
+   KLAWIATURA EKRANOWA – na telefonach i tabletach zamiast klawiatury systemowej
+   ========================================================= */
+const TOUCH_KEYBOARD = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+const KB_ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+let activeSlot = null; // okienko, do którego trafi następna litera
+
+if (TOUCH_KEYBOARD) {
+  document.body.classList.add("touch-kb");
+  const kb = $("keyboard");
+  kb.classList.remove("hidden");
+  kb.innerHTML = KB_ROWS.map((row, r) => `<div class="kb-row">${[...row]
+    .map((ch) => `<button type="button" class="key" data-key="${ch}" aria-label="${ch}">${ch}</button>`)
+    .join("")}${r === 2
+    ? `<button type="button" class="key wide" data-key="back" aria-label="Usuń literę">${icon("backspace", 22)}</button>`
+    : ""}</div>`).join("");
+
+  // Klawisze nie zabierają fokusu okienku i reagują od razu po dotknięciu
+  kb.addEventListener("pointerdown", (e) => {
+    const key = e.target.closest(".key");
+    if (!key) return;
+    e.preventDefault();
+    key.classList.add("pressed");
+    setTimeout(() => key.classList.remove("pressed"), 120);
+    pressKey(key.dataset.key);
+  });
+  // Kliknięcie bez wskaźnika (np. czytnik ekranu)
+  kb.addEventListener("click", (e) => {
+    const key = e.target.closest(".key");
+    if (key && e.detail === 0) pressKey(key.dataset.key);
+  });
+  screens.game.addEventListener("focusin", (e) => {
+    if (e.target.classList.contains("slot")) activeSlot = e.target;
+  });
+}
+
+function pressKey(key) {
+  if (!game || game.phase !== "answering") return;
+  const open = game.inputs.filter((inp) => !inp.disabled);
+  let slot = open.includes(activeSlot) ? activeSlot : open.find((inp) => !inp.value) || open[0];
+  if (!slot) return;
+  if (key === "back") {
+    // Puste okienko: cofamy się do poprzedniego i je czyścimy
+    if (!slot.value) {
+      const prev = open[open.indexOf(slot) - 1];
+      if (prev) slot = prev;
+    }
+    slot.value = "";
+    slot.classList.remove("filled", "wrong");
+    slot.focus();
+    activeSlot = slot;
+    return;
+  }
+  slot.value = key;
+  slot.dispatchEvent(new Event("input")); // ta sama obsługa co przy pisaniu z klawiatury
+  if (document.activeElement === slot) activeSlot = slot;
+}
+
+function updateKeyboard() {
+  if (TOUCH_KEYBOARD) $("keyboard").classList.toggle("off", !game || game.phase !== "answering");
+}
 
 function onOkClick() {
   if (!game) return;
@@ -1976,6 +2080,7 @@ function finishQuestion() {
   game.phase = "done";
   const q = currentQuestion();
   q.finishedAt = new Date().toISOString();
+  updateKeyboard();
   recordAnswer(game, q);
   // Po odpowiedzi odsłaniamy tłumaczenie i włączamy głośnik (jeśli dźwięk nie jest wyłączony)
   $("hint").textContent = q.word.pl;
