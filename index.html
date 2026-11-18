@@ -397,11 +397,49 @@
   /* ---------- Ekran postępów ---------- */
   .page-head { display: flex; align-items: center; gap: 12px; }
   .word-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .status-card { display: flex; flex-direction: column; gap: 12px; }
-  .status-card + .status-card { margin-top: 12px; }
-  .status-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 600 15px/20px var(--font-sans); }
-  .status-head .name { display: inline-flex; align-items: center; gap: 8px; }
-  .status-head .count { font: 500 13px/18px var(--font-sans); color: var(--ink-muted); }
+
+  /* Szczegóły słów w „Moich postępach" */
+  .filter-row { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px 12px; padding: 2px 16px; scrollbar-width: none; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter-row .chip { appearance: none; border: 0; cursor: pointer; height: 34px; flex: none; }
+  .filter-row .chip .n { font-variant-numeric: tabular-nums; opacity: .75; }
+  .filter-row .chip[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); box-shadow: none; }
+  .wlist { list-style: none; margin: 0; padding: 4px 16px; }
+  .wlist > li + li { border-top: 1px solid var(--line); }
+  .wlist details > summary { list-style: none; cursor: pointer; padding: 12px 0; display: flex; flex-direction: column; gap: 8px; }
+  .wlist details > summary::-webkit-details-marker { display: none; }
+  .wlist .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .wlist .names { display: flex; flex-direction: column; min-width: 0; }
+  .wlist .en { font: 600 16px/22px var(--font-sans); }
+  .wlist .pl { font: 500 14px/18px var(--font-display); color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wlist .right { display: flex; align-items: center; gap: 6px; flex: none; }
+  .wlist .chev { color: var(--ink-muted); transition: transform .2s; }
+  .wlist details[open] .chev { transform: rotate(90deg); }
+  .wlist .line2 { display: flex; align-items: center; justify-content: space-between; gap: 12px; font: 500 12px/16px var(--font-sans); color: var(--ink-muted); }
+  .steps { display: flex; gap: 4px; flex: 1; max-width: 140px; }
+  .steps i { flex: 1; height: 6px; border-radius: var(--radius-pill); background: var(--surface-tint); }
+  .steps.st-review i.on { background: var(--danger); }
+  .steps.st-learning i.on { background: var(--sun); }
+  .steps.st-mastered i.on { background: var(--success); }
+  .dots { display: flex; gap: 3px; }
+  .dots i { width: 10px; height: 10px; border-radius: 50%; }
+  .dots .r1 { background: var(--success); }
+  .dots .r2 { background: var(--sun); }
+  .dots .r0 { background: var(--danger); }
+  .wdetail { padding: 0 0 14px; display: flex; flex-direction: column; gap: 10px; font: 400 14px/20px var(--font-sans); }
+  .wdetail .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; }
+  .wdetail .grid div { background: var(--surface-sunken); border-radius: 12px; padding: 8px 4px; display: flex; flex-direction: column; }
+  .wdetail .grid b { font: 700 18px/22px var(--font-sans); font-variant-numeric: tabular-nums; }
+  .wdetail .grid span { font: 500 11px/14px var(--font-sans); color: var(--ink-muted); }
+  .wdetail .grid .g1 b { color: var(--success); }
+  .wdetail .grid .g2 b, .wdetail .grid .g3 b { color: var(--warning); }
+  .wdetail .grid .g0 b { color: var(--danger); }
+  .wdetail p { margin: 0; }
+  .wdetail .letter { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 4px; border-radius: 6px; font-weight: 700; background: var(--surface-sunken); }
+  .wdetail .letter.bad { color: var(--danger); }
+  .wdetail .letter.good { color: var(--success); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 10px; font: 500 12px/16px var(--font-sans); color: var(--ink-muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
 
   .history { list-style: none; margin: 0; padding: 4px 16px; }
   .history li { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; }
@@ -939,6 +977,7 @@ const ICON_PATHS = {
   bars1:    '<path d="M6 18v-3"/><path d="M12 18v-7" opacity=".3"/><path d="M18 18V7" opacity=".3"/>',
   bars2:    '<path d="M6 18v-3"/><path d="M12 18v-7"/><path d="M18 18V7" opacity=".3"/>',
   bars3:    '<path d="M6 18v-3"/><path d="M12 18v-7"/><path d="M18 18V7"/>',
+  chevron:  '<path d="M9 6l6 6-6 6"/>',
   help:     '<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2-2.4 3.5"/><path d="M12 17v.01"/>',
   phone:    '<rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 17.5h2"/>',
   info:     '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 8v.01"/>',
@@ -1229,7 +1268,10 @@ function statusOf(box) {
 
 /* Statystyki każdego słowa z listy WORDS na podstawie historii odpowiedzi */
 function computeWordStats(answers) {
-  const stats = new Map(WORDS.map((w) => [w.en, { box: 0, seen: 0, firstOk: 0, lastAt: null }]));
+  // results: [nie udało się, za 1., za 2., za 3. razem]; recent: ostatnie wyniki; mistakes: "dobra|wpisana" → ile razy
+  const stats = new Map(WORDS.map((w) => [w.en, {
+    box: 0, seen: 0, firstOk: 0, lastAt: null, results: [0, 0, 0, 0], recent: [], mistakes: new Map(),
+  }]));
   answers
     .slice()
     .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
@@ -1239,6 +1281,21 @@ function computeWordStats(answers) {
       s.seen++;
       if (a.result === 1) s.firstOk++;
       s.lastAt = a.at;
+      if (a.result != null) {
+        s.results[a.result]++;
+        s.recent.push(a.result);
+      }
+      // Błędnie wpisane litery w kolejnych próbach (typed[k][i] odpowiada missing[i])
+      (a.typed || []).forEach((t) =>
+        (a.missing || []).forEach((pos, i) => {
+          const good = a.word[pos];
+          const bad = t[i];
+          if (bad && bad !== "_" && good && bad !== good) {
+            const key = `${good}|${bad}`;
+            s.mistakes.set(key, (s.mistakes.get(key) || 0) + 1);
+          }
+        })
+      );
       let box = Math.max(1, s.box);
       if (a.result === 1) box = Math.min(MAX_BOX, box + 1);
       else if (a.result === 0) box = 1;
@@ -1992,29 +2049,16 @@ async function showProgress() {
         inactiveCount ? ` · Nieaktywne słowa: ${inactiveCount}` : ""}</div>
     </div>`;
 
-  // Słowa według statusu
-  html += `<h2 class="section-title"><span class="ico">${icon("list")}</span>Słowa</h2>`;
-  ["review", "learning", "mastered", "fresh"].forEach((key) => {
-    const st = STATUSES[key];
-    const words = groups[key];
-    if (words.length === 0) return;
-    html += `
-      <div class="card status-card">
-        <div class="status-head">
-          <span class="name"><span class="chip ${st.tone}"><span class="ico">${icon(st.icon, 14)}</span>${st.name}</span></span>
-          <span class="count">${words.length}</span>
-        </div>
-        <div class="word-chips">${words
-          .map((w) => {
-            const s = stats.get(w.en);
-            const title = s.seen
-              ? `${w.pl} · ćwiczone ${s.seen}× · za 1. razem ${s.firstOk}×`
-              : w.pl;
-            return wordChip(w, "neutral", title);
-          })
-          .join("")}</div>
-      </div>`;
-  });
+  // Słowa: filtr według statusu + lista ze szczegółami
+  progressView = { stats, groups, filter: progressView.filter };
+  html += `<h2 class="section-title"><span class="ico">${icon("list")}</span>Słowa</h2>
+    <div id="wordFilter" class="filter-row" role="group" aria-label="Pokaż słowa"></div>
+    <div class="card" style="padding: 0;"><ul id="wordProgress" class="wlist"></ul></div>
+    <div class="legend">
+      <span><span class="dots"><i class="r1"></i></span>za 1. razem</span>
+      <span><span class="dots"><i class="r2"></i></span>za 2. lub 3. razem</span>
+      <span><span class="dots"><i class="r0"></i></span>nie udało się</span>
+    </div>`;
 
   // Ostatnie sesje
   const sessions = data.sessions
@@ -2048,7 +2092,101 @@ async function showProgress() {
   }
 
   body.innerHTML = html;
+  renderWordProgress();
 }
+
+/* Stan widoku słów w „Moich postępach" (filtr zostaje między wejściami) */
+let progressView = { stats: null, groups: null, filter: "all" };
+const STATUS_ORDER = ["review", "learning", "mastered", "fresh"];
+const RECENT_DOTS = 8;
+
+function daysAgo(iso) {
+  const day = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const n = Math.round((day(new Date()) - day(new Date(iso))) / 86400000);
+  if (n <= 0) return "dziś";
+  if (n === 1) return "wczoraj";
+  return `${n} ${plural(n, "dzień", "dni", "dni")} temu`;
+}
+
+function renderWordProgress() {
+  const { stats, groups, filter } = progressView;
+  const filters = [["all", "Wszystkie", STATUS_ORDER.reduce((n, k) => n + groups[k].length, 0)]]
+    .concat(STATUS_ORDER.map((k) => [k, STATUSES[k].name, groups[k].length]));
+  $("wordFilter").innerHTML = filters
+    .map(([key, name, n]) => `<button type="button" class="chip ${key === "all" ? "neutral" : STATUSES[key].tone}"
+      data-filter="${key}" aria-pressed="${key === filter}">${name} <span class="n">${n}</span></button>`)
+    .join("");
+
+  // Najpierw słowa najsłabsze: według statusu, potem skuteczności za 1. razem
+  const accuracy = (s) => (s.seen ? s.firstOk / s.seen : 1);
+  const words = (filter === "all" ? STATUS_ORDER : [filter]).flatMap((k) =>
+    groups[k].slice().sort((a, b) => accuracy(stats.get(a.en)) - accuracy(stats.get(b.en)) || a.en.localeCompare(b.en))
+  );
+  $("wordProgress").innerHTML = words.length
+    ? words.map((w) => wordProgressRow(w, stats.get(w.en))).join("")
+    : `<li><p class="caption" style="margin: 0; padding: 12px 0;">Brak słów w tej grupie.</p></li>`;
+}
+
+function wordProgressRow(w, s) {
+  const key = statusOf(s.box);
+  const st = STATUSES[key];
+  const chip = `<span class="chip ${st.tone}"><span class="ico">${icon(st.icon, 14)}</span>${st.name}</span>`;
+  const names = `<div class="names"><span class="en">${esc(w.en)}</span><span class="pl">${esc(w.pl)}</span></div>`;
+  if (!s.seen) {
+    return `<li><div style="padding: 12px 0;"><div class="top">${names}${chip}</div>
+      <div class="line2" style="margin-top: 8px;">Jeszcze nie ćwiczone</div></div></li>`;
+  }
+
+  // Droga do opanowania: kolejne pudełka od 2 do MASTERED_BOX
+  const stepsTotal = MASTERED_BOX - 1;
+  const stepsOn = Math.min(stepsTotal, s.box - 1);
+  const steps = `<span class="steps st-${key}" title="Postęp do opanowania">${
+    Array.from({ length: stepsTotal }, (_, i) => `<i class="${i < stepsOn ? "on" : ""}"></i>`).join("")}</span>`;
+  const dots = `<span class="dots" aria-label="Ostatnie odpowiedzi">${s.recent
+    .slice(-RECENT_DOTS)
+    .map((r) => `<i class="r${r === 1 ? 1 : r === 0 ? 0 : 2}"></i>`)
+    .join("")}</span>`;
+
+  const need = MASTERED_BOX - Math.max(1, s.box);
+  const goal = need > 0
+    ? `Do opanowania: jeszcze <strong>${need}</strong> ${plural(need, "trafienie", "trafienia", "trafień")} za 1. razem.`
+    : "Słowo opanowane! Wraca czasem w powtórce, żeby nie wypadło z pamięci.";
+  const pct = Math.round((s.firstOk / s.seen) * 100);
+  const mistakes = [...s.mistakes.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([k, n]) => {
+      const [good, bad] = k.split("|");
+      return `<span class="letter bad">${esc(bad)}</span> zamiast <span class="letter good">${esc(good)}</span>${n > 1 ? ` (${n}×)` : ""}`;
+    });
+
+  return `<li><details>
+    <summary>
+      <div class="top">${names}<span class="right">${chip}<span class="ico chev">${icon("chevron", 16)}</span></span></div>
+      <div class="line2">${steps}${dots}<span>${daysAgo(s.lastAt)}</span></div>
+    </summary>
+    <div class="wdetail">
+      <div class="grid">
+        <div class="g1"><b>${s.results[1]}</b><span>za 1. razem</span></div>
+        <div class="g2"><b>${s.results[2]}</b><span>za 2. razem</span></div>
+        <div class="g3"><b>${s.results[3]}</b><span>za 3. razem</span></div>
+        <div class="g0"><b>${s.results[0]}</b><span>nie udało się</span></div>
+      </div>
+      <p>Ćwiczone ${s.seen}× · za 1. razem ${pct}% · ostatnio ${formatDate(s.lastAt)}</p>
+      <p>${goal}</p>
+      ${mistakes.length ? `<p>Najczęstsze pomyłki: ${mistakes.join(", ")}</p>` : ""}
+    </div>
+  </details></li>`;
+}
+
+$("progressBody").addEventListener("click", (e) => {
+  const btn = e.target.closest("#wordFilter .chip");
+  if (!btn) return;
+  progressView.filter = btn.dataset.filter;
+  renderWordProgress();
+  const active = document.querySelector(`#wordFilter [data-filter="${progressView.filter}"]`);
+  active.scrollIntoView({ block: "nearest", inline: "nearest" });
+});
 
 $("progressBack").addEventListener("click", () => showScreen("start"));
 $("helpBtn").addEventListener("click", () => showScreen("help"));
