@@ -850,8 +850,21 @@ const PREFERRED_VOICES = [
   "Samantha", "Google US English",                      // amerykańskie
 ];
 let englishVoice = null;
+let voiceBroken = false; // wybrany głos nie zadziałał – używamy domyślnego systemowego
+let currentUtterance = null; // trzymamy referencję, żeby przeglądarka jej nie „sprzątnęła" w trakcie czytania
+
+// iPhone / iPad (iPadOS przedstawia się jak Mac z ekranem dotykowym)
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
 function pickVoice() {
+  // iOS pokazuje na liście także głosy niepobrane na urządzenie – czytanie nimi
+  // daje ciszę. Dlatego na iOS nie wybieramy głosu, tylko język (system dobierze
+  // zainstalowany angielski głos).
+  if (IS_IOS) {
+    englishVoice = null;
+    return;
+  }
   const voices = speechSynthesis.getVoices().filter((v) => /^en[-_]/i.test(v.lang));
   englishVoice =
     PREFERRED_VOICES.map((name) => voices.find((v) => v.name.startsWith(name))).find(Boolean) ||
@@ -863,22 +876,57 @@ function pickVoice() {
 if (SPEECH_SUPPORTED) {
   pickVoice();
   // Lista głosów w niektórych przeglądarkach ładuje się z opóźnieniem
-  speechSynthesis.addEventListener("voiceschanged", pickVoice);
+  speechSynthesis.onvoiceschanged = pickVoice;
+
+  // iOS odblokowuje mowę dopiero po dotknięciu ekranu – przy pierwszym
+  // dotknięciu „mówimy" pustą, cichą wypowiedź
+  const unlockSpeech = () => {
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    speechSynthesis.speak(u);
+    document.removeEventListener("touchend", unlockSpeech, true);
+    document.removeEventListener("click", unlockSpeech, true);
+  };
+  document.addEventListener("touchend", unlockSpeech, true);
+  document.addEventListener("click", unlockSpeech, true);
 }
 
 /* Czyta angielskie słowo na głos */
 function speak(text) {
   if (!SPEECH_SUPPORTED) return;
-  speechSynthesis.cancel(); // przerwij poprzednie czytanie
+  const voice = voiceBroken ? null : englishVoice;
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = englishVoice ? englishVoice.lang : "en-GB";
-  if (englishVoice) u.voice = englishVoice;
+  u.lang = voice ? voice.lang : "en-GB";
+  if (voice) u.voice = voice;
   u.rate = SPEECH_RATE;
 
   const btn = document.getElementById("speakBtn");
-  u.onstart = () => btn.classList.add("speaking");
+  let started = false;
+  u.onstart = () => {
+    started = true;
+    btn.classList.add("speaking");
+  };
   u.onend = u.onerror = () => btn.classList.remove("speaking");
-  speechSynthesis.speak(u);
+  currentUtterance = u;
+
+  if (speechSynthesis.paused) speechSynthesis.resume();
+  if (speechSynthesis.speaking || speechSynthesis.pending) {
+    // Safari na iOS gubi wypowiedź wywołaną zaraz po cancel() – dajemy mu chwilę
+    speechSynthesis.cancel();
+    setTimeout(() => speechSynthesis.speak(u), 80);
+  } else {
+    speechSynthesis.speak(u);
+  }
+
+  // Zabezpieczenie: jeśli wybrany głos nie zaczął mówić, próbujemy domyślnym
+  if (voice) {
+    setTimeout(() => {
+      if (!started && currentUtterance === u) {
+        voiceBroken = true;
+        speak(text);
+      }
+    }, 1500);
+  }
 }
 
 function icon(name, size = 20) {
