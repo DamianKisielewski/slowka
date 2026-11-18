@@ -6,7 +6,7 @@ Mini aplikacja webowa do nauki angielskiego słownictwa dla dzieci (ok. 7 lat) p
 
 ## Funkcje
 
-- Uzupełnianie brakujących liter w angielskich słowach, 3 poziomy trudności
+- Dwa zadania: uzupełnianie brakujących liter (3 poziomy trudności) albo wpisywanie całego słowa z dużym polskim tłumaczeniem nad okienkami
 - 3 próby na słowo, punktacja 3 / 2 / 1, pasek postępu i pozytywne animacje
 - Wymowa słów na głos (wbudowany syntezator mowy przeglądarki)
 - Zapis postępów w przeglądarce (IndexedDB) i ocena opanowania słów (system pudełek Leitnera)

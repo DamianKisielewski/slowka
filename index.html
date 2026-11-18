@@ -302,6 +302,11 @@
   .translation .pl { font: 500 20px/26px var(--font-display); }
   .translation .pl.muted { color: var(--ink-muted); letter-spacing: 2px; }
   .translation > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  /* Tryb „Całe słowo": duże polskie słowo nad okienkami */
+  .big-hint { align-self: stretch; text-align: center; font: 600 32px/38px var(--font-display); color: var(--ink); overflow-wrap: anywhere; }
+  .word-card.spell .translation { justify-content: flex-end; }
+  .word-card.spell .translation > div { display: none; }
+  body.touch-kb #gameScreen .big-hint { font-size: 28px; line-height: 34px; }
 
   .feedback { padding-top: 20px; min-height: 84px; }
 
@@ -648,7 +653,7 @@
     <button type="button" id="helpBtn" class="iconbtn help-btn" aria-label="Pomoc – jak działa aplikacja" title="Pomoc"><span class="ico" data-icon="help"></span></button>
     <span class="badge"><span class="ico" data-icon="book" data-size="28"></span></span>
     <h1 class="display xl">Nauka <span class="accent">słówek</span></h1>
-    <p class="lead">Uzupełnij brakujące litery w angielskich słowach.</p>
+    <p class="lead">Uzupełniaj litery albo wpisuj całe angielskie słowa.</p>
   </header>
 
   <div class="card">
@@ -658,6 +663,15 @@
     </div>
 
     <div class="field">
+      <span class="field-label" id="taskLabel"><span class="ico" data-icon="pencil"></span>Zadanie</span>
+      <div class="seg" id="tasks" role="group" aria-labelledby="taskLabel">
+        <button type="button" class="seg-btn" data-task="fill" aria-pressed="true">Uzupełnij litery</button>
+        <button type="button" class="seg-btn" data-task="spell" aria-pressed="false">Całe słowo</button>
+      </div>
+      <div class="caption field-hint with-ico"><span class="ico" data-icon="info" data-size="14"></span><span id="taskHint"></span></div>
+    </div>
+
+    <div class="field" id="levelField">
       <span class="field-label" id="levelLabel"><span class="ico" data-icon="gauge"></span>Poziom trudności</span>
       <div class="seg" id="levels" role="group" aria-labelledby="levelLabel">
         <button type="button" class="seg-btn" data-level="1" aria-pressed="false"><span class="ico" data-icon="bars1" data-size="18"></span>1</button>
@@ -686,7 +700,7 @@
       <div class="caption field-hint with-ico"><span class="ico" data-icon="info" data-size="14"></span><span id="soundHint"></span></div>
     </div>
 
-    <div class="field">
+    <div class="field" id="translationField">
       <span class="field-label" id="translationLabel"><span class="ico" data-icon="translate"></span>Polskie tłumaczenie</span>
       <div class="seg" id="translations" role="group" aria-labelledby="translationLabel">
         <button type="button" class="seg-btn" data-translation="show" aria-pressed="true">Pokazuj</button>
@@ -758,10 +772,11 @@
   <div class="card help-card">
     <ul>
       <li><strong>Liczba pytań</strong> – od 1 do 100. Słowa mogą się powtarzać, jeśli pytań jest więcej niż słów.</li>
-      <li><strong>Poziom trudności</strong> – ile liter brakuje w słowie (1, 2 lub 3). Można zaznaczyć kilka poziomów – wtedy słowa są mieszane.</li>
+      <li><strong>Zadanie</strong> – „Uzupełnij litery” (brakuje kilku liter) albo „Całe słowo” (dziecko wpisuje całe angielskie słowo, a nad okienkami zawsze widzi duże polskie tłumaczenie).</li>
+      <li><strong>Poziom trudności</strong> – ile liter brakuje w słowie (1, 2 lub 3). Można zaznaczyć kilka poziomów – wtedy słowa są mieszane. Tylko w zadaniu „Uzupełnij litery”.</li>
       <li><strong>Słowa</strong> – „Wszystkie” losuje po równo, „Powtórka” częściej daje słowa, które sprawiają kłopot.</li>
       <li><strong>Dźwięk</strong> – „Zawsze”, „Po odpowiedzi” (bez podpowiedzi przy wpisywaniu) albo „Wyłączony”.</li>
-      <li><strong>Polskie tłumaczenie</strong> – widoczne od początku albo dopiero po odpowiedzi.</li>
+      <li><strong>Polskie tłumaczenie</strong> – widoczne od początku albo dopiero po odpowiedzi. W zadaniu „Całe słowo” jest zawsze widoczne.</li>
       <li><strong>Klawiatura</strong> – „Na ekranie” to duże przyciski z literami w aplikacji (na telefonie włączona sama), „Systemowa” to zwykła klawiatura.</li>
     </ul>
     <p class="caption">Ustawienia są zapamiętywane na tym urządzeniu.</p>
@@ -870,13 +885,14 @@
     </div>
   </div>
 
-  <h1 class="display game-title">Uzupełnij <span id="titleAccent" class="accent">brakującą literę</span></h1>
+  <h1 class="display game-title"><span id="titleVerb">Uzupełnij</span> <span id="titleAccent" class="accent">brakującą literę</span></h1>
 
   <div class="card word-card">
     <div class="word-head">
-      <span class="label with-ico"><span class="ico" data-icon="globe" data-size="14"></span>Po angielsku</span>
+      <span class="label with-ico"><span class="ico" data-icon="globe" data-size="14"></span><span id="wordLabel">Po angielsku</span></span>
       <span id="attemptChip" class="chip neutral"></span>
     </div>
+    <div id="bigHint" class="big-hint hidden"></div>
     <div id="word" class="word"></div>
     <div class="divider"></div>
     <div class="translation">
@@ -1425,6 +1441,7 @@ const okBtn = $("okBtn");
 
 /* ---------- Stan aplikacji ---------- */
 /* Ustawienia sesji (zapamiętywane w przeglądarce):
+   task – "fill" (uzupełnianie brakujących liter) | "spell" (wpisywanie całego słowa)
    levels – wybrane poziomy (liczby brakujących liter), można wybrać kilka
    sound – "always" | "after" (dopiero po odpowiedzi) | "off"
    translation – "show" | "hide" (tłumaczenie odsłaniane po odpowiedzi) */
@@ -1433,12 +1450,13 @@ const SETTINGS_KEY = "slowka-settings";
 const TOUCH_DEVICE = IS_IOS || window.matchMedia("(pointer: coarse)").matches ||
   (navigator.maxTouchPoints > 0 && !window.matchMedia("(hover: hover) and (pointer: fine)").matches);
 const settings = {
-  count: 10, levels: [], mode: "all", sound: "always", translation: "show",
+  count: 10, task: "fill", levels: [], mode: "all", sound: "always", translation: "show",
   keyboard: TOUCH_DEVICE ? "screen" : "system", // "screen" = klawiatura z przyciskami w aplikacji
 };
 try {
   const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
   if (Number.isInteger(saved.count) && saved.count >= 1 && saved.count <= 100) settings.count = saved.count;
+  if (["fill", "spell"].includes(saved.task)) settings.task = saved.task;
   if (Array.isArray(saved.levels)) settings.levels = saved.levels.filter((l) => [1, 2, 3].includes(l));
   if (["all", "review"].includes(saved.mode)) settings.mode = saved.mode;
   if (["always", "after", "off"].includes(saved.sound)) settings.sound = saved.sound;
@@ -1514,14 +1532,14 @@ function buildWordSequence(count) {
 }
 
 /* Tworzy pytanie: poziom to liczba brakujących liter (nigdy spacji);
-   losowane są tylko ich pozycje. */
+   losowane są tylko ich pozycje. Poziom null = całe słowo do wpisania. */
 function makeQuestion(word, level) {
   const letterPositions = [...word.en]
     .map((ch, i) => (ch === " " ? -1 : i))
     .filter((i) => i >= 0);
 
-  // Co najmniej jedna litera musi zostać widoczna
-  const howMany = Math.max(1, Math.min(level, letterPositions.length - 1));
+  // Co najmniej jedna litera musi zostać widoczna (poza wpisywaniem całego słowa)
+  const howMany = level === null ? letterPositions.length : Math.max(1, Math.min(level, letterPositions.length - 1));
   const missing = new Set(shuffle(letterPositions.slice()).slice(0, howMany));
 
   return {
@@ -1570,6 +1588,10 @@ function buildWeightedSequence(count, stats) {
 /* =========================================================
    EKRAN STARTOWY
    ========================================================= */
+const TASK_HINTS = {
+  fill: "W słowie brakuje kilku liter do uzupełnienia.",
+  spell: "Całe angielskie słowo do wpisania, polskie tłumaczenie zawsze widoczne.",
+};
 const MODE_HINTS = {
   all: "Losowo ze wszystkich słów.",
   review: "Częściej słowa do powtórki, rzadziej opanowane.",
@@ -1593,7 +1615,7 @@ function renderSettings() {
   document.querySelectorAll("#levels .seg-btn").forEach((b) =>
     b.setAttribute("aria-pressed", String(settings.levels.includes(Number(b.dataset.level))))
   );
-  [["modes", "mode"], ["sounds", "sound"], ["translations", "translation"], ["keyboards", "keyboard"]].forEach(([id, key]) =>
+  [["tasks", "task"], ["modes", "mode"], ["sounds", "sound"], ["translations", "translation"], ["keyboards", "keyboard"]].forEach(([id, key]) =>
     document.querySelectorAll(`#${id} .seg-btn`).forEach((b) =>
       b.setAttribute("aria-pressed", String(b.dataset[key] === settings[key]))
     )
@@ -1604,6 +1626,10 @@ function renderSettings() {
     : settings.levels.length > 1 ? `Słowa mieszane: brakuje ${settings.levels.join(" lub ")} liter.`
     : first === 1 ? "Brakuje jednej litery w słowie."
     : `Brakuje ${first} liter w słowie.`;
+  $("taskHint").textContent = TASK_HINTS[settings.task];
+  // Przy całym słowie poziom nie ma znaczenia, a tłumaczenie jest zawsze widoczne
+  $("levelField").classList.toggle("hidden", settings.task === "spell");
+  $("translationField").classList.toggle("hidden", settings.task === "spell");
   $("modeHint").textContent = MODE_HINTS[settings.mode];
   $("soundHint").textContent = SPEECH_SUPPORTED ? SOUND_HINTS[settings.sound] : "Ta przeglądarka nie obsługuje czytania na głos.";
   $("translationHint").textContent = TRANSLATION_HINTS[settings.translation];
@@ -1626,11 +1652,12 @@ $("levels").addEventListener("click", (e) => {
 });
 
 // Pozostałe ustawienia: jeden wybór w grupie
-[["modes", "mode"], ["sounds", "sound"], ["translations", "translation"], ["keyboards", "keyboard"]].forEach(([id, key]) =>
+[["tasks", "task"], ["modes", "mode"], ["sounds", "sound"], ["translations", "translation"], ["keyboards", "keyboard"]].forEach(([id, key]) =>
   $(id).addEventListener("click", (e) => {
     const btn = e.target.closest(".seg-btn");
     if (!btn) return;
     settings[key] = btn.dataset[key];
+    $("startError").textContent = "";
     saveSettings();
     renderSettings();
   })
@@ -1646,7 +1673,7 @@ $("startBtn").addEventListener("click", async () => {
     error.textContent = "Podaj liczbę pytań od 1 do 100.";
     return;
   }
-  if (settings.levels.length === 0) {
+  if (settings.task === "fill" && settings.levels.length === 0) {
     error.textContent = "Wybierz co najmniej jeden poziom trudności.";
     return;
   }
@@ -1685,7 +1712,8 @@ async function startGame() {
       ? buildWeightedSequence(settings.count, statsBefore)
       : buildWordSequence(settings.count);
 
-  const levels = buildLevelSequence(words.length, settings.levels);
+  const spell = settings.task === "spell";
+  const levels = spell ? words.map(() => null) : buildLevelSequence(words.length, settings.levels);
   game = {
     questions: words.map((w, i) => makeQuestion(w, levels[i])),
     index: 0,
@@ -1694,10 +1722,11 @@ async function startGame() {
     points: 0,
     phase: "answering", // "answering" = czeka na odpowiedź, "done" = czeka na „Dalej"
     inputs: [],
-    levels: settings.levels.slice(),
+    task: settings.task,
+    levels: spell ? [] : settings.levels.slice(),
     mode: settings.mode,
     sound: SPEECH_SUPPORTED ? settings.sound : "off",
-    translation: settings.translation,
+    translation: spell ? "show" : settings.translation,
     startedAt: new Date().toISOString(),
     prevAnswers,
     statsBefore,
@@ -1716,7 +1745,8 @@ function sessionRecord(g, finished) {
     startedAt: g.startedAt,
     endedAt: new Date().toISOString(),
     count: g.questions.length,
-    level: Math.max(...g.levels), // zgodność ze starszymi zapisami
+    task: g.task,
+    level: g.levels.length ? Math.max(...g.levels) : null, // zgodność ze starszymi zapisami
     levels: g.levels,
     mode: g.mode,
     sound: g.sound,
@@ -1839,7 +1869,13 @@ function renderQuestion() {
     }
   });
 
-  $("titleAccent").textContent = q.missing.size === 1 ? "brakującą literę" : "brakujące litery";
+  const spell = q.level === null;
+  $("titleVerb").textContent = spell ? "Wpisz" : "Uzupełnij";
+  $("titleAccent").textContent = spell ? "całe słowo" : q.missing.size === 1 ? "brakującą literę" : "brakujące litery";
+  document.querySelector("#gameScreen .word-card").classList.toggle("spell", spell);
+  $("bigHint").classList.toggle("hidden", !spell);
+  $("bigHint").textContent = q.word.pl;
+  $("wordLabel").textContent = spell ? "Napisz po angielsku" : "Po angielsku";
   $("hint").textContent = game.translation === "show" ? q.word.pl : "? ? ?";
   $("hint").classList.toggle("muted", game.translation !== "show");
   $("speakBtn").classList.toggle("hidden", game.sound === "off");
@@ -1942,7 +1978,7 @@ document.addEventListener("keydown", (e) => {
 /* =========================================================
    KLAWIATURA EKRANOWA – na telefonach i tabletach zamiast klawiatury systemowej
    ========================================================= */
-const APP_VERSION = "18.11.2026 · klawiatura 2"; // widoczna w Pomocy – łatwo sprawdzić, czy telefon ma nową wersję
+const APP_VERSION = "18.11.2026 · całe słowo"; // widoczna w Pomocy – łatwo sprawdzić, czy telefon ma nową wersję
 $("appVersion").textContent = APP_VERSION;
 const screenKeyboard = () => settings.keyboard === "screen";
 const KB_ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
@@ -2089,6 +2125,7 @@ function checkAnswer() {
 
 /* Poprawne słowo z podkreślonymi brakującymi literami */
 function highlightMissing(q) {
+  if (q.level === null) return esc(q.word.en);
   return [...q.word.en].map((ch, i) => (q.missing.has(i) ? `<u>${ch}</u>` : ch)).join("");
 }
 
@@ -2269,7 +2306,8 @@ async function showProgress() {
       .map((s) => {
         const pct = s.max ? Math.round((s.points / s.max) * 100) : 0;
         const details = [
-          `${s.levels && s.levels.length > 1 ? "Poziomy" : "Poziom"} ${(s.levels || [s.level]).join(", ")}`,
+          s.task === "spell" ? "Całe słowo"
+            : `${s.levels && s.levels.length > 1 ? "Poziomy" : "Poziom"} ${(s.levels || [s.level]).join(", ")}`,
           `${s.answered} z ${s.count} pytań`,
           s.mode === "review" ? "Powtórka" : "Wszystkie",
           s.finished ? "" : "przerwana",
