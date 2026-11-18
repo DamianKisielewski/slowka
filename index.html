@@ -224,6 +224,7 @@
     font: 600 16px/20px var(--font-sans);
   }
   .seg-btn[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); }
+  #sounds .seg-btn { padding: 0 6px; font-size: 14px; line-height: 16px; }
 
   .error { min-height: 20px; margin: 16px 0 0; font: 500 13px/18px var(--font-sans); color: var(--danger); }
   .bottom { margin-top: auto; padding-top: 24px; display: flex; flex-direction: column; gap: 12px; }
@@ -298,6 +299,7 @@
   .divider { align-self: stretch; height: 1px; background: var(--line); }
   .translation { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .translation .pl { font: 500 20px/26px var(--font-display); }
+  .translation .pl.muted { color: var(--ink-muted); letter-spacing: 2px; }
   .translation > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
   .feedback { padding-top: 20px; min-height: 84px; }
@@ -531,7 +533,7 @@
         <button type="button" class="seg-btn" data-level="2" aria-pressed="false"><span class="ico" data-icon="bars2" data-size="18"></span>2</button>
         <button type="button" class="seg-btn" data-level="3" aria-pressed="false"><span class="ico" data-icon="bars3" data-size="18"></span>3</button>
       </div>
-      <div class="caption field-hint with-ico"><span class="ico" data-icon="info" data-size="14"></span>Maksymalna liczba brakujących liter w słowie.</div>
+      <div class="caption field-hint with-ico"><span class="ico" data-icon="info" data-size="14"></span><span id="levelHint"></span></div>
     </div>
 
     <div class="field">
@@ -541,6 +543,25 @@
         <button type="button" class="seg-btn" data-mode="review" aria-pressed="false"><span class="ico" data-icon="repeat" data-size="18"></span>Powtórka</button>
       </div>
       <div class="caption field-hint with-ico"><span class="ico" data-icon="info" data-size="14"></span><span id="modeHint"></span></div>
+    </div>
+
+    <div class="field">
+      <span class="field-label" id="soundLabel"><span class="ico" data-icon="volume"></span>Dźwięk</span>
+      <div class="seg" id="sounds" role="group" aria-labelledby="soundLabel">
+        <button type="button" class="seg-btn" data-sound="always" aria-pressed="true">Zawsze</button>
+        <button type="button" class="seg-btn" data-sound="after" aria-pressed="false">Po odpowiedzi</button>
+        <button type="button" class="seg-btn" data-sound="off" aria-pressed="false">Wyłączony</button>
+      </div>
+      <div class="caption field-hint with-ico"><span class="ico" data-icon="info" data-size="14"></span><span id="soundHint"></span></div>
+    </div>
+
+    <div class="field">
+      <span class="field-label" id="translationLabel"><span class="ico" data-icon="translate"></span>Polskie tłumaczenie</span>
+      <div class="seg" id="translations" role="group" aria-labelledby="translationLabel">
+        <button type="button" class="seg-btn" data-translation="show" aria-pressed="true">Pokazuj</button>
+        <button type="button" class="seg-btn" data-translation="hide" aria-pressed="false">Ukryj</button>
+      </div>
+      <div class="caption field-hint with-ico"><span class="ico" data-icon="info" data-size="14"></span><span id="translationHint"></span></div>
     </div>
 
     <p id="startError" class="error" role="alert"></p>
@@ -1144,7 +1165,24 @@ const screens = {
 const okBtn = $("okBtn");
 
 /* ---------- Stan aplikacji ---------- */
-const settings = { count: 10, level: null, mode: "all" }; // mode: "all" | "review"
+/* Ustawienia sesji (zapamiętywane w przeglądarce):
+   levels – wybrane poziomy (liczby brakujących liter), można wybrać kilka
+   sound – "always" | "after" (dopiero po odpowiedzi) | "off"
+   translation – "show" | "hide" (tłumaczenie odsłaniane po odpowiedzi) */
+const SETTINGS_KEY = "slowka-settings";
+const settings = { count: 10, levels: [], mode: "all", sound: "always", translation: "show" };
+try {
+  const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+  if (Number.isInteger(saved.count) && saved.count >= 1 && saved.count <= 100) settings.count = saved.count;
+  if (Array.isArray(saved.levels)) settings.levels = saved.levels.filter((l) => [1, 2, 3].includes(l));
+  if (["all", "review"].includes(saved.mode)) settings.mode = saved.mode;
+  if (["always", "after", "off"].includes(saved.sound)) settings.sound = saved.sound;
+  if (["show", "hide"].includes(saved.translation)) settings.translation = saved.translation;
+} catch (e) { /* brak dostępu do localStorage – zostają domyślne */ }
+
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* trudno */ }
+}
 let game = null;          // stan bieżącej sesji
 let autoNextTimer = null; // timer automatycznego przejścia dalej
 let positiveIndex = Math.floor(Math.random() * POSITIVE.length); // która ikona jest następna
@@ -1209,25 +1247,33 @@ function buildWordSequence(count) {
   return seq;
 }
 
-/* Tworzy pytanie: losuje liczbę i pozycje brakujących liter (nigdy spacji). */
+/* Tworzy pytanie: poziom to liczba brakujących liter (nigdy spacji);
+   losowane są tylko ich pozycje. */
 function makeQuestion(word, level) {
   const letterPositions = [...word.en]
     .map((ch, i) => (ch === " " ? -1 : i))
     .filter((i) => i >= 0);
 
   // Co najmniej jedna litera musi zostać widoczna
-  const maxMissing = Math.max(1, Math.min(level, letterPositions.length - 1));
-  const howMany = randInt(1, maxMissing);
+  const howMany = Math.max(1, Math.min(level, letterPositions.length - 1));
   const missing = new Set(shuffle(letterPositions.slice()).slice(0, howMany));
 
   return {
     word,
+    level,
     missing,
     attempts: 0,       // liczba wykonanych prób
     firstWrong: false, // czy pierwsza próba była błędna
     result: null,      // 1, 2, 3 = numer udanej próby; 0 = nie zgadnięte
     typed: [],         // co zostało wpisane w kolejnych próbach (np. "rr", "r_")
   };
+}
+
+/* Poziom dla każdego pytania: wybrane poziomy po równo, w losowej kolejności */
+function buildLevelSequence(count, levels) {
+  const seq = [];
+  while (seq.length < count) seq.push(...shuffle(levels.slice()));
+  return shuffle(seq.slice(0, count));
 }
 
 /* Tryb „Powtórka": losowanie ważone – słowa do powtórki pojawiają się częściej,
@@ -1258,31 +1304,65 @@ function buildWeightedSequence(count, stats) {
 /* =========================================================
    EKRAN STARTOWY
    ========================================================= */
-$("levels").addEventListener("click", (e) => {
-  const btn = e.target.closest(".seg-btn");
-  if (!btn) return;
-  settings.level = Number(btn.dataset.level);
-  document.querySelectorAll("#levels .seg-btn").forEach((b) =>
-    b.setAttribute("aria-pressed", String(b === btn))
-  );
-  $("startError").textContent = "";
-});
-
 const MODE_HINTS = {
   all: "Losowo ze wszystkich słów.",
   review: "Częściej słowa do powtórki, rzadziej opanowane.",
 };
+const SOUND_HINTS = {
+  always: "Głośnik działa od początku pytania, słowo czytane też po odpowiedzi.",
+  after: "Słowo czytane dopiero po odpowiedzi – bez podpowiedzi przy wpisywaniu.",
+  off: "Bez czytania na głos.",
+};
+const TRANSLATION_HINTS = {
+  show: "Polskie słowo widoczne od początku jako podpowiedź.",
+  hide: "Polskie słowo pokaże się dopiero po odpowiedzi.",
+};
 
-$("modes").addEventListener("click", (e) => {
+/* Zaznacza przyciski w grupie zgodnie z ustawieniami i odświeża podpowiedzi */
+function renderSettings() {
+  document.querySelectorAll("#levels .seg-btn").forEach((b) =>
+    b.setAttribute("aria-pressed", String(settings.levels.includes(Number(b.dataset.level))))
+  );
+  [["modes", "mode"], ["sounds", "sound"], ["translations", "translation"]].forEach(([id, key]) =>
+    document.querySelectorAll(`#${id} .seg-btn`).forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset[key] === settings[key]))
+    )
+  );
+  const [first] = settings.levels;
+  $("levelHint").textContent =
+    settings.levels.length === 0 ? "Liczba brakujących liter. Możesz wybrać kilka poziomów naraz."
+    : settings.levels.length > 1 ? `Słowa mieszane: brakuje ${settings.levels.join(" lub ")} liter.`
+    : first === 1 ? "Brakuje jednej litery w słowie."
+    : `Brakuje ${first} liter w słowie.`;
+  $("modeHint").textContent = MODE_HINTS[settings.mode];
+  $("soundHint").textContent = SPEECH_SUPPORTED ? SOUND_HINTS[settings.sound] : "Ta przeglądarka nie obsługuje czytania na głos.";
+  $("translationHint").textContent = TRANSLATION_HINTS[settings.translation];
+  $("countInput").value = settings.count;
+}
+
+// Poziomy: wielokrotny wybór (kliknięcie włącza/wyłącza poziom)
+$("levels").addEventListener("click", (e) => {
   const btn = e.target.closest(".seg-btn");
   if (!btn) return;
-  settings.mode = btn.dataset.mode;
-  document.querySelectorAll("#modes .seg-btn").forEach((b) =>
-    b.setAttribute("aria-pressed", String(b === btn))
-  );
-  $("modeHint").textContent = MODE_HINTS[settings.mode];
+  const level = Number(btn.dataset.level);
+  settings.levels = settings.levels.includes(level)
+    ? settings.levels.filter((l) => l !== level)
+    : [...settings.levels, level].sort();
+  $("startError").textContent = "";
+  saveSettings();
+  renderSettings();
 });
-$("modeHint").textContent = MODE_HINTS[settings.mode];
+
+// Pozostałe ustawienia: jeden wybór w grupie
+[["modes", "mode"], ["sounds", "sound"], ["translations", "translation"]].forEach(([id, key]) =>
+  $(id).addEventListener("click", (e) => {
+    const btn = e.target.closest(".seg-btn");
+    if (!btn) return;
+    settings[key] = btn.dataset[key];
+    saveSettings();
+    renderSettings();
+  })
+);
 
 $("progressBtn").addEventListener("click", showProgress);
 
@@ -1294,8 +1374,8 @@ $("startBtn").addEventListener("click", async () => {
     error.textContent = "Podaj liczbę pytań od 1 do 100.";
     return;
   }
-  if (![1, 2, 3].includes(settings.level)) {
-    error.textContent = "Wybierz poziom trudności.";
+  if (settings.levels.length === 0) {
+    error.textContent = "Wybierz co najmniej jeden poziom trudności.";
     return;
   }
 
@@ -1307,6 +1387,7 @@ $("startBtn").addEventListener("click", async () => {
 
   error.textContent = "";
   settings.count = count;
+  saveSettings();
   startGame();
 });
 
@@ -1332,16 +1413,19 @@ async function startGame() {
       ? buildWeightedSequence(settings.count, statsBefore)
       : buildWordSequence(settings.count);
 
+  const levels = buildLevelSequence(words.length, settings.levels);
   game = {
-    questions: words.map((w) => makeQuestion(w, settings.level)),
+    questions: words.map((w, i) => makeQuestion(w, levels[i])),
     index: 0,
     firstOk: 0,    // dobrze za 1. razem
     firstWrong: 0, // źle za 1. razem
     points: 0,
     phase: "answering", // "answering" = czeka na odpowiedź, "done" = czeka na „Dalej"
     inputs: [],
-    level: settings.level,
+    levels: settings.levels.slice(),
     mode: settings.mode,
+    sound: SPEECH_SUPPORTED ? settings.sound : "off",
+    translation: settings.translation,
     startedAt: new Date().toISOString(),
     prevAnswers,
     statsBefore,
@@ -1360,8 +1444,11 @@ function sessionRecord(g, finished) {
     startedAt: g.startedAt,
     endedAt: new Date().toISOString(),
     count: g.questions.length,
-    level: g.level,
+    level: Math.max(...g.levels), // zgodność ze starszymi zapisami
+    levels: g.levels,
     mode: g.mode,
+    sound: g.sound,
+    translation: g.translation,
     points: g.points,
     max: MAX_ATTEMPTS * g.questions.length,
     answered: g.questions.filter((q) => q.result !== null).length,
@@ -1389,7 +1476,7 @@ function recordAnswer(g, q) {
   const answer = {
     word: q.word.en,
     at: q.finishedAt,
-    level: g.level,
+    level: q.level,
     missing: [...q.missing].sort((a, b) => a - b),
     attempts: q.attempts,
     result: q.result,
@@ -1476,7 +1563,10 @@ function renderQuestion() {
   });
 
   $("titleAccent").textContent = q.missing.size === 1 ? "brakującą literę" : "brakujące litery";
-  $("hint").textContent = q.word.pl;
+  $("hint").textContent = game.translation === "show" ? q.word.pl : "? ? ?";
+  $("hint").classList.toggle("muted", game.translation !== "show");
+  $("speakBtn").classList.toggle("hidden", game.sound === "off");
+  $("speakBtn").disabled = game.sound !== "always";
   setAttemptChip("neutral", "clock", `Próba 1 z ${MAX_ATTEMPTS}`);
   setFeedback(null);
   okBtn.innerHTML = BTN_OK;
@@ -1544,6 +1634,7 @@ function focusNeighbour(input, dir) {
 
 /* Przycisk głośnika – wymowa bieżącego słowa */
 $("speakBtn").addEventListener("click", () => {
+  if (game.sound === "off" || (game.sound === "after" && game.phase === "answering")) return;
   speak(currentQuestion().word.en);
   // Fokus wraca do okienka, żeby dziecko mogło od razu pisać dalej
   if (game.phase === "answering") {
@@ -1554,7 +1645,6 @@ $("speakBtn").addEventListener("click", () => {
   }
 });
 if (!SPEECH_SUPPORTED) {
-  $("speakBtn").disabled = true;
   $("speakBtn").title = "Ta przeglądarka nie obsługuje czytania na głos";
 }
 
@@ -1606,8 +1696,8 @@ function checkAnswer() {
     setFeedback("success", "check", "Dobrze",
       `Świetnie! <strong>${q.word.en}</strong> to ${esc(q.word.pl)}. +${gain} pkt`);
     showCelebration();
-    speak(q.word.en); // utrwalenie: słowo czytane na głos po poprawnej odpowiedzi
     finishQuestion();
+    if (game.sound !== "off") speak(q.word.en); // utrwalenie: słowo czytane na głos po poprawnej odpowiedzi
     autoNextTimer = setTimeout(nextQuestion, AUTO_NEXT_MS);
   } else {
     if (q.attempts === 1) {
@@ -1644,8 +1734,8 @@ function checkAnswer() {
       setFeedback("danger", "cross", "Koniec prób",
         `Poprawnie: <strong>${highlightMissing(q)}</strong>`);
       okBtn.innerHTML = BTN_NEXT;
-      speak(q.word.en); // dziecko słyszy poprawne słowo
       finishQuestion();
+      if (game.sound !== "off") speak(q.word.en); // dziecko słyszy poprawne słowo
     }
   }
   updateStats();
@@ -1675,6 +1765,10 @@ function finishQuestion() {
   const q = currentQuestion();
   q.finishedAt = new Date().toISOString();
   recordAnswer(game, q);
+  // Po odpowiedzi odsłaniamy tłumaczenie i włączamy głośnik (jeśli dźwięk nie jest wyłączony)
+  $("hint").textContent = q.word.pl;
+  $("hint").classList.remove("muted");
+  $("speakBtn").disabled = game.sound === "off";
   okBtn.focus();
 }
 
@@ -1836,7 +1930,7 @@ async function showProgress() {
       .map((s) => {
         const pct = s.max ? Math.round((s.points / s.max) * 100) : 0;
         const details = [
-          `Poziom ${s.level}`,
+          `${s.levels && s.levels.length > 1 ? "Poziomy" : "Poziom"} ${(s.levels || [s.level]).join(", ")}`,
           `${s.answered} z ${s.count} pytań`,
           s.mode === "review" ? "Powtórka" : "Wszystkie",
           s.finished ? "" : "przerwana",
@@ -2164,6 +2258,7 @@ $("againBtn").addEventListener("click", startGame);
 $("settingsBtn").addEventListener("click", () => showScreen("start"));
 
 renderIcons();
+renderSettings();
 </script>
 </body>
 </html>
