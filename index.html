@@ -398,6 +398,45 @@
   .page-head { display: flex; align-items: center; gap: 12px; }
   .word-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 
+  /* Wykres aktywności (dzienne odpowiedzi i ich wynik) */
+  .activity { display: flex; flex-direction: column; gap: 14px; --c-ok: #1c7444; --c-mid: #cf9631; --c-bad: #a8382c; }
+  .activity .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .seg.small { padding: 3px; gap: 2px; }
+  .seg.small .seg-btn { height: 32px; padding: 0 12px; font-size: 13px; flex: none; }
+  .act-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .act-stats div { display: flex; flex-direction: column; gap: 2px; }
+  .act-stats b { font: 700 20px/24px var(--font-sans); font-variant-numeric: tabular-nums; }
+  .act-stats span { font: 500 12px/16px var(--font-sans); color: var(--ink-muted); }
+  .plot { display: grid; grid-template-columns: 28px 1fr; grid-template-rows: 150px auto; column-gap: 6px; }
+  .plot .yaxis { position: relative; font: 500 11px/1 var(--font-sans); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .plot .yaxis span { position: absolute; right: 0; transform: translateY(50%); }
+  .plot .area { position: relative; display: flex; align-items: flex-end; border-bottom: 1px solid var(--line); }
+  .plot .grid-line { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--line); }
+  .plot .col { position: relative; flex: 1; height: 100%; display: flex; flex-direction: column-reverse; padding: 0 1px; cursor: pointer; border-radius: 6px 6px 0 0; }
+  .plot .col.sel { background: var(--surface-sunken); }
+  .plot .seg-ok, .plot .seg-mid, .plot .seg-bad { margin: 0 auto; width: min(100%, 22px); flex: none; }
+  .plot .col > i + i { border-bottom: 2px solid var(--surface); }
+  .plot .col.sel > i + i { border-bottom-color: var(--surface-sunken); }
+  .plot .col > i:last-child { border-radius: 4px 4px 0 0; }
+  .plot .seg-ok { background: var(--c-ok); }
+  .plot .seg-mid { background: var(--c-mid); }
+  .plot .seg-bad { background: var(--c-bad); }
+  .plot .xaxis { grid-column: 2; display: flex; padding-top: 6px; font: 500 10px/12px var(--font-sans); color: var(--ink-muted); }
+  .plot .xaxis span { flex: 1; text-align: center; white-space: nowrap; overflow: visible; }
+  .plot .xaxis span.today { color: var(--ink); font-weight: 700; }
+  .day-detail { background: var(--surface-sunken); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; font: 500 13px/18px var(--font-sans); min-height: 90px; }
+  .day-detail .head { display: flex; flex-direction: column; gap: 2px; font-weight: 700; font-size: 14px; }
+  .day-detail .head small { font: 500 12px/16px var(--font-sans); color: var(--ink-muted); }
+  .day-detail .row { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+  .day-detail .row .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .day-detail .row .lab { flex: 1; color: var(--ink-muted); }
+  .day-detail .row b { min-width: 22px; text-align: right; }
+  .day-detail .row .pct { min-width: 40px; text-align: right; color: var(--ink-muted); }
+  .sw.ok { background: var(--c-ok); } .sw.mid { background: var(--c-mid); } .sw.bad { background: var(--c-bad); }
+  .act-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font: 500 12px/16px var(--font-sans); color: var(--ink-muted); }
+  .act-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .act-legend .sw { width: 10px; height: 10px; border-radius: 3px; }
+
   /* Szczegóły słów w „Moich postępach" */
   .filter-row { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px 12px; padding: 2px 16px; scrollbar-width: none; }
   .filter-row::-webkit-scrollbar { display: none; }
@@ -2049,6 +2088,11 @@ async function showProgress() {
         inactiveCount ? ` · Nieaktywne słowa: ${inactiveCount}` : ""}</div>
     </div>`;
 
+  // Aktywność dzienna – wykres
+  activityView = { answers: data.answers, sessions: data.sessions, range: activityView.range, mode: activityView.mode, selected: null };
+  html += `<h2 class="section-title"><span class="ico">${icon("chart")}</span>Aktywność</h2>
+    <div id="activity" class="card activity"></div>`;
+
   // Słowa: filtr według statusu + lista ze szczegółami
   progressView = { stats, groups, filter: progressView.filter };
   html += `<h2 class="section-title"><span class="ico">${icon("list")}</span>Słowa</h2>
@@ -2092,8 +2136,169 @@ async function showProgress() {
   }
 
   body.innerHTML = html;
+  renderActivity();
   renderWordProgress();
 }
+
+/* ---------- Wykres aktywności ----------
+   Słupek = jeden dzień. Wysokość: liczba odpowiedzi (albo 100% w trybie „Procent"),
+   kolory: dobrze za 1. razem / za 2.–3. razem / nie udało się. */
+let activityView = { answers: [], sessions: [], range: 14, mode: "count", selected: null };
+
+function dayKey(date) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/* Dni od najstarszego do dziś: {key, date, ok, mid, bad, total, minutes} */
+function buildDays(answers, sessions, range) {
+  const days = [];
+  const byKey = new Map();
+  const today = new Date();
+  for (let i = range - 1; i >= 0; i--) {
+    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+    const day = { key: dayKey(date), date, ok: 0, mid: 0, bad: 0, total: 0, minutes: 0 };
+    days.push(day);
+    byKey.set(day.key, day);
+  }
+  answers.forEach((a) => {
+    const day = byKey.get(dayKey(a.at));
+    if (!day || a.result == null) return;
+    if (a.result === 1) day.ok++;
+    else if (a.result === 0) day.bad++;
+    else day.mid++;
+    day.total++;
+  });
+  // Czas nauki z sesji (bez sesji zostawionych otwartych na długo – max 60 min)
+  sessions.forEach((s) => {
+    const day = byKey.get(dayKey(s.startedAt));
+    if (!day || !s.endedAt) return;
+    day.minutes += Math.min(60, Math.max(0, (new Date(s.endedAt) - new Date(s.startedAt)) / 60000));
+  });
+  return days;
+}
+
+/* Seria: ile dni z rzędu (do dziś lub do wczoraj) były jakieś odpowiedzi */
+function streakDays(answers) {
+  const active = new Set(answers.map((a) => dayKey(a.at)));
+  const d = new Date();
+  if (!active.has(dayKey(d))) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (active.has(dayKey(d))) {
+    n++;
+    d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
+
+function niceMax(v) {
+  if (v <= 4) return 4;
+  const steps = [5, 10, 20, 25, 50, 100, 200, 250, 500, 1000];
+  const step = steps.find((st) => v / st <= 4) || 1000;
+  return Math.ceil(v / step) * step;
+}
+
+const pctOf = (n, total) => (total ? Math.round((n / total) * 100) : 0);
+
+function renderActivity() {
+  const v = activityView;
+  const days = buildDays(v.answers, v.sessions, v.range);
+  const activeDays = days.filter((d) => d.total > 0);
+  const sum = days.reduce((acc, d) => ({ ok: acc.ok + d.ok, mid: acc.mid + d.mid, bad: acc.bad + d.bad, total: acc.total + d.total }),
+    { ok: 0, mid: 0, bad: 0, total: 0 });
+  if (!v.selected || !days.some((d) => d.key === v.selected)) {
+    v.selected = (activeDays[activeDays.length - 1] || days[days.length - 1]).key;
+  }
+
+  const percent = v.mode === "percent";
+  const max = percent ? 100 : niceMax(Math.max(1, ...days.map((d) => d.total)));
+  const ticks = [0, max / 2, max];
+  const todayKey = dayKey(new Date());
+  const labelEvery = v.range <= 7 ? 1 : v.range <= 14 ? 2 : 5;
+
+  const seg = (cls, n, total) => {
+    if (!n) return "";
+    const h = percent ? (n / total) * 100 : (n / max) * 100;
+    return `<i class="${cls}" style="height: ${h}%"></i>`;
+  };
+  const cols = days.map((d) => `<div class="col${d.key === v.selected ? " sel" : ""}" data-day="${d.key}"
+      role="button" tabindex="0" aria-label="${dayLabel(d)}: ${d.total} odpowiedzi">${
+      seg("seg-ok", d.ok, d.total)}${seg("seg-mid", d.mid, d.total)}${seg("seg-bad", d.bad, d.total)}</div>`).join("");
+  const xLabels = days.map((d, i) => {
+    const fromEnd = days.length - 1 - i;
+    const text = d.key === todayKey ? "dziś"
+      : fromEnd % labelEvery === 0 ? (v.range <= 7 ? d.date.toLocaleDateString("pl-PL", { weekday: "short" }) : d.date.getDate())
+      : "";
+    return `<span class="${d.key === todayKey ? "today" : ""}">${text}</span>`;
+  }).join("");
+
+  $("activity").innerHTML = `
+    <div class="controls">
+      <div class="seg small" id="actRange" role="group" aria-label="Zakres">
+        ${[7, 14, 30].map((r) => `<button type="button" class="seg-btn" data-range="${r}" aria-pressed="${r === v.range}">${r} dni</button>`).join("")}
+      </div>
+      <div class="seg small" id="actMode" role="group" aria-label="Widok">
+        <button type="button" class="seg-btn" data-mode="count" aria-pressed="${!percent}">Liczba</button>
+        <button type="button" class="seg-btn" data-mode="percent" aria-pressed="${percent}">Procent</button>
+      </div>
+    </div>
+    <div class="act-stats">
+      <div><b>${activeDays.length}/${v.range}</b><span>dni z nauką</span></div>
+      <div><b>${streakDays(v.answers)}</b><span>seria dni z rzędu</span></div>
+      <div><b>${sum.total ? pctOf(sum.ok, sum.total) + "%" : "–"}</b><span>dobrze za 1. razem</span></div>
+    </div>
+    <div class="plot">
+      <div class="yaxis">${ticks.map((t) => `<span style="bottom: ${(t / max) * 100}%">${t}${percent ? "%" : ""}</span>`).join("")}</div>
+      <div class="area" id="actArea">
+        ${ticks.slice(1).map((t) => `<div class="grid-line" style="bottom: ${(t / max) * 100}%"></div>`).join("")}
+        ${cols}
+      </div>
+      <div class="xaxis">${xLabels}</div>
+    </div>
+    <div class="act-legend">
+      <span><i class="sw ok"></i>dobrze za 1. razem</span>
+      <span><i class="sw mid"></i>za 2. lub 3. razem</span>
+      <span><i class="sw bad"></i>nie udało się</span>
+    </div>
+    <div class="day-detail" id="dayDetail"></div>`;
+  renderDayDetail(days.find((d) => d.key === v.selected));
+}
+
+function dayLabel(d) {
+  return d.key === dayKey(new Date())
+    ? "Dziś"
+    : d.date.toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" });
+}
+
+function renderDayDetail(d) {
+  const minutes = Math.round(d.minutes);
+  const head = `<div class="head"><span>${dayLabel(d)}</span><small>${d.total} ${plural(d.total, "odpowiedź", "odpowiedzi", "odpowiedzi")}${
+    minutes ? ` · ok. ${minutes} min nauki` : ""}</small></div>`;
+  if (!d.total) {
+    $("dayDetail").innerHTML = `${head}<span class="caption">Tego dnia nie było nauki.</span>`;
+    return;
+  }
+  const row = (cls, label, n) =>
+    `<div class="row"><i class="sw ${cls}"></i><span class="lab">${label}</span><b>${n}</b><span class="pct">${pctOf(n, d.total)}%</span></div>`;
+  $("dayDetail").innerHTML = head + row("ok", "Dobrze za 1. razem", d.ok) + row("mid", "Za 2. lub 3. razem", d.mid) + row("bad", "Nie udało się", d.bad);
+}
+
+/* Wybór dnia: dotknięcie/kliknięcie, najechanie myszą, klawiatura */
+function selectActivityDay(col) {
+  if (!col || col.dataset.day === activityView.selected) return;
+  activityView.selected = col.dataset.day;
+  document.querySelectorAll("#actArea .col").forEach((c) => c.classList.toggle("sel", c === col));
+  renderDayDetail(buildDays(activityView.answers, activityView.sessions, activityView.range).find((d) => d.key === col.dataset.day));
+}
+$("progressBody").addEventListener("pointerover", (e) => {
+  if (e.pointerType === "mouse") selectActivityDay(e.target.closest("#actArea .col"));
+});
+$("progressBody").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    const col = e.target.closest("#actArea .col");
+    if (col) { e.preventDefault(); selectActivityDay(col); }
+  }
+});
 
 /* Stan widoku słów w „Moich postępach" (filtr zostaje między wejściami) */
 let progressView = { stats: null, groups: null, filter: "all" };
@@ -2180,6 +2385,15 @@ function wordProgressRow(w, s) {
 }
 
 $("progressBody").addEventListener("click", (e) => {
+  selectActivityDay(e.target.closest("#actArea .col"));
+  const range = e.target.closest("#actRange .seg-btn");
+  const mode = e.target.closest("#actMode .seg-btn");
+  if (range || mode) {
+    if (range) activityView.range = Number(range.dataset.range);
+    if (mode) activityView.mode = mode.dataset.mode;
+    renderActivity();
+    return;
+  }
   const btn = e.target.closest("#wordFilter .chip");
   if (!btn) return;
   progressView.filter = btn.dataset.filter;
