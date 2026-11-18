@@ -1,0 +1,2121 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nauka słówek</title>
+<!-- Czcionki z projektu (bez internetu użyte zostaną czcionki systemowe) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+  /* ---------- Tokeny projektu ---------- */
+  :root {
+    --canvas: #eef2ec;
+    --surface: #ffffff;
+    --surface-sunken: #f4f6f2;
+    --surface-tint: #e3ebe0;
+    --line: #e2e7df;
+    --ink: #1d2620;
+    --ink-muted: #5c685f;
+    --brand: #4a7350;
+    --brand-strong: #3a5d40;
+    --on-brand: #ffffff;
+    --brand-soft: #d3e2cf;
+    --deep: #2b4732;
+    --on-deep: #f1f5ef;
+    --on-deep-muted: #b9cbb9;
+    --sun: #b7832a;
+    --sun-soft: #f3e7cf;
+    --success: #2f7148;
+    --warning: #8a5a0e;
+    --danger: #a8382c;
+
+    --shadow-card: 0 1px 2px rgba(29, 38, 32, .04), 0 8px 24px rgba(29, 38, 32, .06);
+    --shadow-control: 0 2px 10px rgba(29, 38, 32, .08);
+    --shadow-float: 0 12px 32px rgba(29, 38, 32, .14);
+
+    --radius-md: 16px;
+    --radius-lg: 22px;
+    --radius-xl: 28px;
+    --radius-pill: 999px;
+
+    --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+    --font-sans: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .screen {
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-width: 560px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 20px calc(24px + env(safe-area-inset-bottom));
+  }
+  .hidden { display: none !important; }
+
+  .ico { display: inline-flex; flex: none; }
+  .ico svg { display: block; }
+  .with-ico { display: inline-flex; align-items: center; gap: 6px; }
+  .with-ico > .ico { color: var(--brand); }
+
+  /* Okrągła plakietka z ikoną */
+  .badge {
+    display: inline-grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--brand-soft);
+    color: var(--brand);
+    margin-bottom: 16px;
+  }
+
+  /* ---------- Typografia ---------- */
+  .display {
+    margin: 0;
+    font: 400 30px/34px var(--font-display);
+    letter-spacing: -0.4px;
+    text-wrap: balance;
+  }
+  .display.xl { font-size: 40px; line-height: 44px; letter-spacing: -0.6px; }
+  .accent { color: var(--brand); }
+  .caption { font: 500 12px/16px var(--font-sans); color: var(--ink-muted); }
+  .label { font: 700 11px/14px var(--font-sans); letter-spacing: .8px; color: var(--ink-muted); text-transform: uppercase; }
+  .lead { margin: 10px 0 0; font: 400 15px/22px var(--font-sans); color: var(--ink-muted); }
+
+  /* ---------- Karty ---------- */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 20px;
+  }
+  .card.tint { background: var(--surface-tint); box-shadow: none; padding: 14px 16px; }
+  .card.deep { background: var(--deep); color: var(--on-deep); border-radius: var(--radius-xl); }
+
+  /* ---------- Chipy ---------- */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: var(--radius-pill);
+    font: 600 12px/16px var(--font-sans);
+    background: var(--surface-tint);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .chip.brand { background: var(--brand-soft); }
+  .chip.brand .ico { color: var(--brand); }
+  .chip.sun { background: var(--sun-soft); }
+  .chip.sun .ico { color: var(--sun); }
+  .chip.success, .chip.warning, .chip.danger, .chip.neutral {
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .chip.success { color: var(--success); }
+  .chip.warning { color: var(--warning); }
+  .chip.danger { color: var(--danger); }
+  .chip.neutral { color: var(--ink-muted); }
+
+  /* ---------- Przyciski ---------- */
+  .btn {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 56px;
+    padding: 0 28px;
+    border-radius: var(--radius-pill);
+    font: 600 16px/20px var(--font-sans);
+    white-space: nowrap;
+    transition: background-color .15s, box-shadow .15s, transform .15s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn:focus-visible, .iconbtn:focus-visible, .seg-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .btn.block { display: flex; width: 100%; }
+  .btn.primary { background: var(--brand); color: var(--on-brand); box-shadow: var(--shadow-float); }
+  .btn.primary:hover { background: var(--brand-strong); }
+  .btn.secondary { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-control); }
+
+  /* Wyraźne podświetlenie przy sprawdzaniu: kolor tła + poświata */
+  .btn.good, .btn.good:hover {
+    background: var(--success);
+    box-shadow: 0 0 0 6px rgba(47, 113, 72, .18), 0 0 24px rgba(47, 113, 72, .45);
+  }
+  .btn.bad, .btn.bad:hover {
+    background: var(--danger);
+    box-shadow: 0 0 0 6px rgba(168, 56, 44, .18), 0 0 24px rgba(168, 56, 44, .45);
+  }
+
+  .iconbtn {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: none;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--shadow-control);
+  }
+
+  /* ---------- Ekran startowy ---------- */
+  .start-head { padding: 24px 0 28px; }
+  .field + .field { margin-top: 24px; }
+  .field-label { display: flex; align-items: center; gap: 8px; font: 600 15px/20px var(--font-sans); margin-bottom: 10px; }
+  .field-label .ico { color: var(--brand); }
+  .field-hint { margin-top: 8px; }
+
+  .count-input {
+    font: 600 22px/28px var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    width: 100%;
+    height: 56px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--surface-sunken);
+    color: var(--ink);
+    outline: none;
+  }
+  .count-input:focus { box-shadow: 0 0 0 2px var(--brand); }
+
+  /* Przełącznik poziomu – tor z trzema zakładkami */
+  .seg {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-sunken);
+  }
+  .seg-btn {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    flex: 1;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--ink-muted);
+    font: 600 16px/20px var(--font-sans);
+  }
+  .seg-btn[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); }
+
+  .error { min-height: 20px; margin: 16px 0 0; font: 500 13px/18px var(--font-sans); color: var(--danger); }
+  .bottom { margin-top: auto; padding-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+
+  /* ---------- Ekran gry ---------- */
+  .topbar { display: flex; align-items: center; gap: 12px; }
+
+  /* Pasek postępu: jeden odcinek na pytanie */
+  .progress { flex: 1; min-width: 0; display: flex; gap: 3px; height: 8px; }
+  .progress.dense { gap: 1px; }
+  .progress .seg-p {
+    flex: 1;
+    border-radius: var(--radius-pill);
+    background: var(--brand-soft);
+    transition: background-color .25s;
+  }
+  .progress .seg-p.current { background: var(--brand); }
+  .progress .seg-p.r1 { background: var(--success); }  /* dobrze za 1. razem */
+  .progress .seg-p.r23 { background: var(--sun); }     /* dobrze za 2. lub 3. razem */
+  .progress .seg-p.r0 { background: var(--danger); }   /* niezgadnięte */
+
+  .meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 20px; }
+  .meta .chips { display: flex; gap: 8px; }
+
+  .game-title { padding-top: 20px; }
+  .word-card { margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .word-head { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+  /* Przycisk wymowy */
+  .iconbtn.speak { width: 52px; height: 52px; background: var(--brand-soft); color: var(--brand); box-shadow: none; transition: background-color .15s, color .15s; }
+  .iconbtn.speak.speaking { background: var(--brand); color: var(--on-brand); }
+  .iconbtn.speak:disabled { opacity: .4; cursor: not-allowed; }
+
+  .word {
+    --t: 44px; /* szerokość kafelka – ustawiana w JS, żeby słowo zmieściło się w karcie */
+    display: flex;
+    justify-content: center;
+    gap: calc(var(--t) * .14);
+    width: 100%;
+  }
+  .tile, .slot {
+    width: var(--t);
+    height: calc(var(--t) * 1.36);
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: calc(var(--t) * .34);
+    font: 600 calc(var(--t) * .72)/1 var(--font-sans);
+    letter-spacing: -0.5px;
+  }
+  .tile { background: var(--surface-sunken); color: var(--ink); }
+  .space { width: calc(var(--t) * .4); flex: none; }
+
+  .slot {
+    padding: 0;
+    text-align: center;
+    text-transform: lowercase;
+    border: 2px dashed var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand);
+    outline: none;
+    caret-color: transparent;
+    -webkit-appearance: none;
+  }
+  .slot:focus { border-style: solid; background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .slot.filled { border-style: solid; background: var(--surface); }
+  .slot.ok { border: 2px solid var(--success); background: var(--surface); color: var(--success); }
+  .slot.wrong { border: 2px solid var(--danger); background: var(--surface); color: var(--danger); }
+  .slot:disabled { opacity: 1; -webkit-text-fill-color: currentColor; }
+
+  .divider { align-self: stretch; height: 1px; background: var(--line); }
+  .translation { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .translation .pl { font: 500 20px/26px var(--font-display); }
+  .translation > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+  .feedback { padding-top: 20px; min-height: 84px; }
+  .feedback .card { display: flex; align-items: center; gap: 12px; font: 400 14px/20px var(--font-sans); }
+  .feedback strong { font-weight: 700; }
+
+  /* ---------- Wyskakująca pozytywna ikona ---------- */
+  .celebrate {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(238, 242, 236, .88);
+    pointer-events: none; /* nie blokuje kliknięcia „Dalej" */
+    opacity: 0;
+    z-index: 10;
+  }
+  .celebrate.show { animation: fade 1400ms ease-out forwards; }
+  .celebrate .big { font-size: min(45vw, 220px); line-height: 1; }
+  .celebrate .cheer { margin-top: 20px; font: 400 40px/44px var(--font-display); letter-spacing: -0.6px; color: var(--brand); }
+  .celebrate.show .big { animation: bounce-in 1400ms linear forwards; }
+  .celebrate.show .cheer { animation: cheer-in 1400ms ease-out forwards; }
+
+  @keyframes fade {
+    0% { opacity: 0; }
+    8%, 82% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  /* Wyskok z dołu, sprężyste rozciągnięcie i dwa odbicia */
+  @keyframes bounce-in {
+    0%   { transform: translateY(60vh) scale(.2); }
+    22%  { transform: translateY(-40px) scale(1.15, .9); }
+    30%  { transform: translateY(0) scale(.88, 1.12); }
+    38%  { transform: translateY(-50px) scale(1.04, .97); }
+    48%  { transform: translateY(0) scale(1.08, .92); }
+    55%  { transform: translateY(-18px) scale(1); }
+    62%  { transform: translateY(0) scale(1.03, .97); }
+    68%, 100% { transform: translateY(0) scale(1); }
+  }
+  @keyframes cheer-in {
+    0%, 25% { opacity: 0; transform: scale(.6); }
+    38% { opacity: 1; transform: scale(1.15); }
+    48%, 100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* ---------- Podsumowanie ---------- */
+  .hero { margin-top: 24px; display: flex; flex-direction: column; gap: 14px; }
+  .hero .kicker { font: 500 12px/16px var(--font-sans); color: var(--on-deep-muted); }
+  .hero .score { font: 600 40px/44px var(--font-sans); letter-spacing: -0.6px; font-variant-numeric: tabular-nums; }
+  .hero .score small { font-size: 18px; font-weight: 500; color: var(--on-deep-muted); margin-left: 4px; }
+  .hero .track { height: 6px; border-radius: var(--radius-pill); background: rgba(255, 255, 255, .18); overflow: hidden; }
+  .hero .bar { height: 100%; border-radius: inherit; background: var(--on-deep); }
+  .hero .praise { font: 400 22px/28px var(--font-display); }
+
+  .stats {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .stat { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-card); min-width: 0; }
+  .stat .ico-wrap { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--surface-sunken); flex: none; }
+  .stat .stat-label { font: 500 11px/14px var(--font-sans); color: var(--ink-muted); }
+  .stat .stat-value { font: 600 17px/22px var(--font-sans); font-variant-numeric: tabular-nums; }
+
+  .section-title { margin: 24px 0 12px; font: 600 17px/22px var(--font-sans); }
+  .mistakes { list-style: none; margin: 0; padding: 4px 16px; }
+  .mistakes li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; font: 600 15px/20px var(--font-sans); }
+  .mistakes .en { display: inline-flex; align-items: center; gap: 10px; }
+  .section-title { display: flex; align-items: center; gap: 8px; }
+  .section-title .ico { color: var(--brand); }
+  .hero .kicker { display: inline-flex; align-items: center; gap: 6px; }
+  .hero .hero-note { font: 500 13px/18px var(--font-sans); color: var(--on-deep-muted); }
+
+  /* ---------- Nowe opanowane słowa (podsumowanie) ---------- */
+  .mastered { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .mastered .title { display: flex; align-items: center; gap: 8px; font: 600 15px/20px var(--font-sans); }
+  .mastered .title .ico { color: var(--sun); }
+
+  /* ---------- Ekran postępów ---------- */
+  .page-head { display: flex; align-items: center; gap: 12px; }
+  .word-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .status-card { display: flex; flex-direction: column; gap: 12px; }
+  .status-card + .status-card { margin-top: 12px; }
+  .status-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 600 15px/20px var(--font-sans); }
+  .status-head .name { display: inline-flex; align-items: center; gap: 8px; }
+  .status-head .count { font: 500 13px/18px var(--font-sans); color: var(--ink-muted); }
+
+  .history { list-style: none; margin: 0; padding: 4px 16px; }
+  .history li { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; }
+  .history li + li { border-top: 1px solid var(--line); }
+  .history .row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .history .when { font: 600 15px/20px var(--font-sans); }
+  .history .score { font: 600 15px/20px var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .history .score small { font-weight: 500; color: var(--ink-muted); margin-left: 4px; }
+  .mini-track { height: 6px; border-radius: var(--radius-pill); background: var(--brand-soft); overflow: hidden; }
+  .mini-bar { height: 100%; border-radius: inherit; background: var(--brand); }
+
+  .backup { display: flex; flex-direction: column; gap: 14px; }
+  .backup-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .backup-actions .btn { flex: 1; height: 48px; padding: 0 18px; font-size: 15px; }
+  .btn-link {
+    appearance: none; border: 0; background: none; cursor: pointer; align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 0;
+    font: 600 13px/18px var(--font-sans); color: var(--danger);
+  }
+  .mistakes li + li { border-top: 1px solid var(--line); }
+  .mistakes .pl { font: 500 15px/20px var(--font-display); color: var(--ink-muted); text-align: right; }
+  .mistakes .none { color: var(--ink-muted); font-weight: 500; }
+
+  /* ---------- Ekran startowy: dwa przyciski obok siebie ---------- */
+  .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .bottom-row .btn { padding: 0 12px; font-size: 15px; }
+
+  /* ---------- Lista słów ---------- */
+  .section-title .count { margin-left: auto; font: 500 13px/18px var(--font-sans); color: var(--ink-muted); }
+
+  .add-form { display: flex; flex-direction: column; gap: 14px; }
+  .add-form .error { margin: 0; min-height: 0; }
+  .form-grid { display: grid; gap: 12px; }
+  @media (min-width: 480px) {
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .form-grid .full { grid-column: 1 / -1; }
+  }
+  .input-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .text-input {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--surface-sunken);
+    color: var(--ink);
+    font: 500 16px/22px var(--font-sans);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .text-input:focus { box-shadow: 0 0 0 2px var(--brand); }
+  select.text-input {
+    padding-right: 40px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%235c685f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+
+  .word-rows { list-style: none; margin: 0; padding: 4px 8px 4px 16px; }
+  .word-rows li { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+  .word-rows li + li { border-top: 1px solid var(--line); }
+  .word-rows .wtext { flex: 1; min-width: 0; display: flex; flex-direction: column; transition: opacity .15s; }
+  .word-rows .en { font: 600 16px/22px var(--font-sans); }
+  .word-rows .pl { font: 500 14px/20px var(--font-display); color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .word-rows li.inactive .wtext { opacity: .4; }
+
+  /* Dodawanie wielu słów */
+  .bulk { display: flex; flex-direction: column; gap: 12px; }
+  .text-area {
+    height: auto;
+    min-height: 148px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    resize: vertical;
+    line-height: 24px;
+  }
+  .bulk .btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+  .bulk-result:empty { display: none; }
+  .bulk-result { display: flex; flex-direction: column; gap: 8px; font: 500 14px/20px var(--font-sans); }
+  .bulk-ok, .bulk-bad { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .bulk-ok { color: var(--success); }
+  .bulk-bad { color: var(--warning); }
+  .bulk-errors { margin: 0; padding-left: 20px; color: var(--ink-muted); font: 400 13px/18px var(--font-sans); }
+  .bulk-errors li + li { margin-top: 4px; }
+
+  .row-actions { display: flex; align-items: center; gap: 2px; flex: none; }
+  .row-actions .iconbtn { width: 40px; height: 40px; }
+  .row-actions .switch { margin: 0 4px; }
+  .word-rows li.editing .en { color: var(--brand); }
+  .word-rows li.editing .wtext::after { content: "edytujesz"; font: 600 11px/14px var(--font-sans); color: var(--brand); }
+  .form-actions { display: flex; gap: 12px; }
+  .form-actions .btn { flex: 1; }
+  .iconbtn.ghost { background: transparent; box-shadow: none; color: var(--ink-muted); }
+  .iconbtn.ghost.edit:hover { color: var(--brand); }
+  .iconbtn.ghost:hover { color: var(--danger); background: var(--surface-sunken); }
+
+  /* Przełącznik aktywne / nieaktywne */
+  .switch { position: relative; display: inline-block; width: 48px; height: 28px; flex: none; cursor: pointer; }
+  .switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .switch span { position: absolute; inset: 0; border-radius: var(--radius-pill); background: var(--line); transition: background-color .15s; pointer-events: none; }
+  .switch span::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+    transition: transform .15s;
+  }
+  .switch input:checked + span { background: var(--brand); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .btn-link.neutral { color: var(--brand); margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ===== Ekran startowy ===== -->
+<section id="startScreen" class="screen">
+  <header class="start-head">
+    <span class="badge"><span class="ico" data-icon="book" data-size="28"></span></span>
+    <h1 class="display xl">Nauka <span class="accent">słówek</span></h1>
+    <p class="lead">Uzupełnij brakujące litery w angielskich słowach.</p>
+  </header>
+
+  <div class="card">
+    <div class="field">
+      <label class="field-label" for="countInput"><span class="ico" data-icon="hash"></span>Liczba pytań</label>
+      <input id="countInput" class="count-input" type="number" min="1" max="100" value="10" inputmode="numeric">
+    </div>
+
+    <div class="field">
+      <span class="field-label" id="levelLabel"><span class="ico" data-icon="gauge"></span>Poziom trudności</span>
+      <div class="seg" id="levels" role="group" aria-labelledby="levelLabel">
+        <button type="button" class="seg-btn" data-level="1" aria-pressed="false"><span class="ico" data-icon="bars1" data-size="18"></span>1</button>
+        <button type="button" class="seg-btn" data-level="2" aria-pressed="false"><span class="ico" data-icon="bars2" data-size="18"></span>2</button>
+        <button type="button" class="seg-btn" data-level="3" aria-pressed="false"><span class="ico" data-icon="bars3" data-size="18"></span>3</button>
+      </div>
+      <div class="caption field-hint with-ico"><span class="ico" data-icon="info" data-size="14"></span>Maksymalna liczba brakujących liter w słowie.</div>
+    </div>
+
+    <div class="field">
+      <span class="field-label" id="modeLabel"><span class="ico" data-icon="shuffle"></span>Słowa</span>
+      <div class="seg" id="modes" role="group" aria-labelledby="modeLabel">
+        <button type="button" class="seg-btn" data-mode="all" aria-pressed="true"><span class="ico" data-icon="list" data-size="18"></span>Wszystkie</button>
+        <button type="button" class="seg-btn" data-mode="review" aria-pressed="false"><span class="ico" data-icon="repeat" data-size="18"></span>Powtórka</button>
+      </div>
+      <div class="caption field-hint with-ico"><span class="ico" data-icon="info" data-size="14"></span><span id="modeHint"></span></div>
+    </div>
+
+    <p id="startError" class="error" role="alert"></p>
+  </div>
+
+  <div class="bottom">
+    <button type="button" id="startBtn" class="btn primary block"><span class="ico" data-icon="play"></span>Start</button>
+    <div class="bottom-row">
+      <button type="button" id="progressBtn" class="btn secondary"><span class="ico" data-icon="chart"></span>Moje postępy</button>
+      <button type="button" id="wordsBtn" class="btn secondary"><span class="ico" data-icon="book"></span>Lista słów</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Lista słów ===== -->
+<section id="wordsScreen" class="screen hidden">
+  <header class="page-head">
+    <button type="button" id="wordsBack" class="iconbtn" aria-label="Wróć"><span class="ico" data-icon="back"></span></button>
+  </header>
+  <h1 class="display xl" style="padding-top: 16px;">Lista <span class="accent">słów</span></h1>
+  <p id="wordsSummary" class="lead"></p>
+
+  <h2 class="section-title" id="formTitle"></h2>
+  <form id="addWordForm" class="card add-form" novalidate>
+    <div class="form-grid">
+      <label class="input-wrap">
+        <span class="caption">Po angielsku</span>
+        <input id="newEn" class="text-input" type="text" maxlength="30" placeholder="np. kiwi"
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </label>
+      <label class="input-wrap">
+        <span class="caption">Po polsku</span>
+        <input id="newPl" class="text-input" type="text" maxlength="60" placeholder="np. kiwi" autocomplete="off">
+      </label>
+    </div>
+    <p id="addError" class="error" role="alert"></p>
+    <div class="form-actions">
+      <button type="button" id="cancelEdit" class="btn secondary hidden">Anuluj</button>
+      <button type="submit" id="addSubmit" class="btn primary"></button>
+    </div>
+  </form>
+
+  <h2 class="section-title"><span class="ico" data-icon="list"></span>Dodaj wiele słów naraz</h2>
+  <div class="card bulk">
+    <label class="input-wrap">
+      <span class="caption">Wklej listę: jedna linia to jedno słowo, najpierw angielski, po przecinku polski.</span>
+      <textarea id="bulkText" class="text-input text-area" rows="6" spellcheck="false"
+                placeholder="kiwi, kiwi&#10;grapes, winogrona&#10;scissors, nożyczki"></textarea>
+    </label>
+    <div id="bulkCount" class="caption"></div>
+    <button type="button" id="bulkSubmit" class="btn primary block" disabled><span class="ico" data-icon="plus"></span>Dodaj słowa</button>
+    <div id="bulkResult" class="bulk-result" aria-live="polite"></div>
+  </div>
+
+  <div id="wordsList"></div>
+
+  <button type="button" id="restoreBtn" class="btn-link neutral"><span class="ico" data-icon="again" data-size="16"></span>Przywróć brakujące słowa domyślne</button>
+</section>
+
+<!-- ===== Ekran gry ===== -->
+<section id="gameScreen" class="screen hidden">
+  <header class="topbar">
+    <button type="button" id="quitBtn" class="iconbtn" aria-label="Zakończ lekcję"><span class="ico" data-icon="back"></span></button>
+    <div id="progress" class="progress" aria-hidden="true"></div>
+    <span class="chip sun"><span class="ico" data-icon="star" data-size="14"></span><span id="pointsText">0 pkt</span></span>
+  </header>
+
+  <div class="meta">
+    <span class="caption with-ico"><span class="ico" data-icon="list" data-size="14"></span><span id="questionText"></span></span>
+    <div class="chips">
+      <span class="chip success" title="Dobrze za 1. razem"><span class="ico" data-icon="check" data-size="14"></span><span id="firstOkText"></span></span>
+      <span class="chip danger" title="Źle za 1. razem"><span class="ico" data-icon="warning" data-size="14"></span><span id="firstWrongText"></span></span>
+    </div>
+  </div>
+
+  <h1 class="display game-title">Uzupełnij <span id="titleAccent" class="accent">brakującą literę</span></h1>
+
+  <div class="card word-card">
+    <div class="word-head">
+      <span class="label with-ico"><span class="ico" data-icon="globe" data-size="14"></span>Po angielsku</span>
+      <span id="attemptChip" class="chip neutral"></span>
+    </div>
+    <div id="word" class="word"></div>
+    <div class="divider"></div>
+    <div class="translation">
+      <div>
+        <span class="caption with-ico"><span class="ico" data-icon="translate" data-size="14"></span>Tłumaczenie</span>
+        <span id="hint" class="pl"></span>
+      </div>
+      <button type="button" id="speakBtn" class="iconbtn speak" aria-label="Posłuchaj wymowy" title="Posłuchaj wymowy"><span class="ico" data-icon="volume" data-size="24"></span></button>
+    </div>
+  </div>
+
+  <div id="feedback" class="feedback" aria-live="polite"></div>
+
+  <div class="bottom">
+    <button type="button" id="okBtn" class="btn primary block"></button>
+  </div>
+</section>
+
+<!-- Wyskakująca pozytywna ikona po poprawnej odpowiedzi -->
+<div id="celebrate" class="celebrate" aria-live="polite">
+  <div id="celebrateIcon" class="big"></div>
+  <div id="celebrateText" class="cheer"></div>
+</div>
+
+<!-- ===== Podsumowanie ===== -->
+<section id="summaryScreen" class="screen hidden">
+  <h1 class="display xl" style="padding-top: 24px;">Koniec <span class="accent">lekcji</span></h1>
+
+  <div class="card deep hero">
+    <span class="kicker"><span class="ico" data-icon="trophy" data-size="16"></span>Twój wynik</span>
+    <div id="sumPoints" class="score"></div>
+    <div class="track"><div id="sumBar" class="bar"></div></div>
+    <div id="sumPraise" class="praise"></div>
+  </div>
+
+  <div id="sumMastered" class="card mastered hidden"></div>
+
+  <div id="sumStats" class="stats"></div>
+
+  <h2 class="section-title"><span class="ico" data-icon="repeat"></span>Słowa z pomyłką</h2>
+  <div class="card" style="padding: 0;">
+    <ul id="sumMistakes" class="mistakes"></ul>
+  </div>
+
+  <div class="bottom">
+    <button type="button" id="againBtn" class="btn primary block"><span class="ico" data-icon="again"></span>Zagraj ponownie</button>
+    <button type="button" id="settingsBtn" class="btn secondary block"><span class="ico" data-icon="settings"></span>Zmień ustawienia</button>
+  </div>
+</section>
+
+<!-- ===== Postępy ===== -->
+<section id="progressScreen" class="screen hidden">
+  <header class="page-head">
+    <button type="button" id="progressBack" class="iconbtn" aria-label="Wróć"><span class="ico" data-icon="back"></span></button>
+  </header>
+  <h1 class="display xl" style="padding-top: 16px;">Moje <span class="accent">postępy</span></h1>
+
+  <div id="progressBody"></div>
+
+  <h2 class="section-title"><span class="ico" data-icon="download"></span>Kopia zapasowa</h2>
+  <div class="card backup">
+    <p class="caption" style="margin: 0;">Postępy są zapisane tylko w tej przeglądarce na tym urządzeniu. Zrób kopię, żeby ich nie stracić albo przenieść je na inne urządzenie.</p>
+    <div class="backup-actions">
+      <button type="button" id="exportBtn" class="btn secondary"><span class="ico" data-icon="download" data-size="18"></span>Eksportuj</button>
+      <button type="button" id="importBtn" class="btn secondary"><span class="ico" data-icon="upload" data-size="18"></span>Importuj</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <button type="button" id="resetBtn" class="btn-link"><span class="ico" data-icon="trash" data-size="16"></span>Usuń wszystkie postępy</button>
+  </div>
+</section>
+
+<script>
+/* =========================================================
+   SŁOWNICTWO DOMYŚLNE – wgrywane do bazy przy pierwszym uruchomieniu.
+   Później słowa dodaje się, usuwa i wyłącza w aplikacji (ekran „Lista słów").
+   Nowe słowa dopisane tutaj pojawią się po kliknięciu
+   „Przywróć brakujące słowa domyślne".
+   ========================================================= */
+const DEFAULT_WORDS = [
+  // Owoce
+  { en: "apple",       pl: "jabłko" },
+  { en: "pear",        pl: "gruszka" },
+  { en: "banana",      pl: "banan" },
+  { en: "orange",      pl: "pomarańcza / pomarańczowy" },
+  { en: "lemon",       pl: "cytryna" },
+  { en: "strawberry",  pl: "truskawka" },
+  { en: "cherry",      pl: "wiśnia / czereśnia" },
+  { en: "blueberry",   pl: "borówka" },
+  // Przybory szkolne
+  { en: "pencil",      pl: "ołówek" },
+  { en: "pen",         pl: "długopis" },
+  { en: "crayon",      pl: "kredka" },
+  { en: "eraser",      pl: "gumka" },
+  { en: "ruler",       pl: "linijka" },
+  { en: "notebook",    pl: "zeszyt / notes" },
+  { en: "pencil case", pl: "piórnik" },
+  { en: "book",        pl: "książka" },
+  { en: "bag",         pl: "plecak" },
+  { en: "chair",       pl: "krzesło" },
+  // Kolory
+  { en: "red",         pl: "czerwony" },
+  { en: "yellow",      pl: "żółty" },
+  { en: "green",       pl: "zielony" },
+  { en: "pink",        pl: "różowy" },
+  { en: "purple",      pl: "fioletowy" },
+  { en: "grey",        pl: "szary" },
+  { en: "brown",       pl: "brązowy" },
+  { en: "white",       pl: "biały" },
+  { en: "black",       pl: "czarny" },
+];
+
+/* Bieżąca lista słów {en, pl, active} – wczytywana z bazy przy starcie
+   (bez bazy używana jest lista domyślna). Nieaktywne słowa nie są losowane. */
+let WORDS = DEFAULT_WORDS.map((w) => ({ ...w, active: true }));
+const activeWords = () => WORDS.filter((w) => w.active !== false);
+
+/* Zabezpieczenie tekstu wpisanego przez użytkownika przed wstawieniem do HTML */
+function esc(text) {
+  return String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+const MAX_ATTEMPTS = 3;    // liczba prób na jedno słowo
+const AUTO_NEXT_MS = 1400; // opóźnienie automatycznego przejścia po poprawnej odpowiedzi
+
+/* Pozytywne ikony pokazywane po poprawnej odpowiedzi – używane po kolei, na zmianę */
+const POSITIVE = [
+  { icon: "🌟", text: "Super!" },
+  { icon: "🎉", text: "Brawo!" },
+  { icon: "👍", text: "Świetnie!" },
+  { icon: "🏆", text: "Mistrz!" },
+  { icon: "🦄", text: "Wow!" },
+  { icon: "🚀", text: "Rakieta!" },
+  { icon: "🌈", text: "Pięknie!" },
+  { icon: "💪", text: "Mocarz!" },
+  { icon: "😎", text: "Ekstra!" },
+  { icon: "🥳", text: "Hura!" },
+  { icon: "🐶", text: "Dobra robota!" },
+  { icon: "🍭", text: "Słodko!" },
+  { icon: "⚡", text: "Błyskawicznie!" },
+  { icon: "🦁", text: "Jak lew!" },
+  { icon: "🎈", text: "Tak trzymaj!" },
+  { icon: "🥇", text: "Złoto!" },
+  { icon: "💯", text: "Na sto procent!" },
+  { icon: "🤩", text: "Rewelacja!" },
+  { icon: "😃", text: "Wspaniale!" },
+  { icon: "👏", text: "Brawa dla ciebie!" },
+  { icon: "🙌", text: "Hej, super!" },
+  { icon: "✨", text: "Magicznie!" },
+  { icon: "🎊", text: "Fantastycznie!" },
+  { icon: "🌞", text: "Promiennie!" },
+  { icon: "🍀", text: "Szczęściarz!" },
+  { icon: "🐼", text: "Pandastycznie!" },
+  { icon: "🐸", text: "Skaczę z radości!" },
+  { icon: "🦊", text: "Sprytnie!" },
+  { icon: "🐯", text: "Tygrysia moc!" },
+  { icon: "🐬", text: "Płyniesz jak delfin!" },
+  { icon: "🦋", text: "Lekko jak motylek!" },
+  { icon: "🐝", text: "Pracowita pszczółka!" },
+  { icon: "🐧", text: "Super pingwin!" },
+  { icon: "🦖", text: "Dino-moc!" },
+  { icon: "🐙", text: "Ośmiornicznie!" },
+  { icon: "🍦", text: "Pycha!" },
+  { icon: "🍕", text: "Smakowicie!" },
+  { icon: "🧁", text: "Słodki sukces!" },
+  { icon: "🍉", text: "Soczyście!" },
+  { icon: "🎯", text: "W dziesiątkę!" },
+  { icon: "🎸", text: "Czadowo!" },
+  { icon: "🚂", text: "Jedziesz dalej!" },
+  { icon: "🛸", text: "Kosmicznie!" },
+  { icon: "🌻", text: "Rośniesz w siłę!" },
+  { icon: "👑", text: "Król słówek!" },
+  { icon: "💎", text: "Prawdziwy skarb!" },
+  { icon: "🔥", text: "Ogień!" },
+  { icon: "🎁", text: "Niespodzianka!" },
+  { icon: "🧠", text: "Mądra głowa!" },
+  { icon: "🤖", text: "Robot-mistrz!" },
+];
+
+/* Ikony liniowe (SVG) używane w interfejsie */
+const ICON_PATHS = {
+  check:    '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  warning:  '<path d="M12 4l9 16H3z"/><path d="M12 10v4.5"/><path d="M12 17.5v.01"/>',
+  star:     '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"/>',
+  arrow:    '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
+  back:     '<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>',
+  clock:    '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  play:     '<path d="M8 5.5v13l10-6.5z"/>',
+  again:    '<path d="M4.5 12a7.5 7.5 0 0 1 13-5.1L20 9.5"/><path d="M20 4.5v5h-5"/><path d="M19.5 12a7.5 7.5 0 0 1-13 5.1L4 14.5"/><path d="M4 19.5v-5h5"/>',
+  settings: '<path d="M4 7h10"/><path d="M18 7h2"/><circle cx="16" cy="7" r="2"/><path d="M4 17h4"/><path d="M12 17h8"/><circle cx="10" cy="17" r="2"/>',
+  cross:    '<path d="M6 6l12 12"/><path d="M18 6L6 18"/>',
+  pencil:   '<path d="M15.5 4.5l4 4L8 20H4v-4z"/><path d="M13 7l4 4"/>',
+  sparkle:  '<path d="M12 4l1.8 6.2L20 12l-6.2 1.8L12 20l-1.8-6.2L4 12l6.2-1.8z"/>',
+  // Pozostałe
+  book:     '<path d="M4.5 5.5c2.5-1 5-1 7.5.5v13c-2.5-1.5-5-1.5-7.5-.5z"/><path d="M19.5 5.5c-2.5-1-5-1-7.5.5v13c2.5-1.5 5-1.5 7.5-.5z"/>',
+  hash:     '<path d="M9.5 4L7.5 20"/><path d="M16.5 4l-2 16"/><path d="M4.5 9h15"/><path d="M4 15h15"/>',
+  gauge:    '<path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l3.5-4.5"/><path d="M12 16v.01"/>',
+  bars1:    '<path d="M6 18v-3"/><path d="M12 18v-7" opacity=".3"/><path d="M18 18V7" opacity=".3"/>',
+  bars2:    '<path d="M6 18v-3"/><path d="M12 18v-7"/><path d="M18 18V7" opacity=".3"/>',
+  bars3:    '<path d="M6 18v-3"/><path d="M12 18v-7"/><path d="M18 18V7"/>',
+  info:     '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 8v.01"/>',
+  list:     '<path d="M9 6.5h11"/><path d="M9 12h11"/><path d="M9 17.5h11"/><path d="M4.5 6.5v.01"/><path d="M4.5 12v.01"/><path d="M4.5 17.5v.01"/>',
+  globe:    '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.5-3.5-8.5s1-6 3.5-8.5z"/>',
+  translate:'<path d="M4 5.5h16v10H10l-4 3.5v-3.5H4z"/><path d="M8.5 10.5h7"/>',
+  trophy:   '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5"/><path d="M16 6h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v4"/><path d="M8.5 20h7"/>',
+  repeat:   '<path d="M4.5 12a7.5 7.5 0 0 1 13-5.1L20 9.5"/><path d="M20 4.5v5h-5"/>',
+  volume:   '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+  shuffle:  '<path d="M4 7h3.5c4.5 0 4.5 10 9 10H20"/><path d="M4 17h3.5c1.6 0 2.6-1.3 3.4-3"/><path d="M13.1 10c.8-1.7 1.8-3 3.4-3H20"/><path d="M17.5 4.5L20 7l-2.5 2.5"/><path d="M17.5 14.5L20 17l-2.5 2.5"/>',
+  chart:    '<path d="M4.5 19.5h15"/><path d="M7.5 16v-4"/><path d="M12 16V8"/><path d="M16.5 16v-6"/>',
+  download: '<path d="M12 4.5v10"/><path d="M8 10.5l4 4 4-4"/><path d="M5 19.5h14"/>',
+  upload:   '<path d="M12 14.5v-10"/><path d="M8 8.5l4-4 4 4"/><path d="M5 19.5h14"/>',
+  trash:    '<path d="M5 7h14"/><path d="M9.5 7V4.5h5V7"/><path d="M7 7l1 12.5h8L17 7"/>',
+  plus:     '<path d="M12 5v14"/><path d="M5 12h14"/>',
+};
+
+/* =========================================================
+   WYMOWA – wbudowany syntezator mowy przeglądarki (Web Speech API)
+   ========================================================= */
+const SPEECH_SUPPORTED = "speechSynthesis" in window;
+const SPEECH_RATE = 0.8; // trochę wolniej niż normalnie – łatwiej usłyszeć dziecku
+
+// Ulubione głosy (jeśli są na urządzeniu), w kolejności od najlepszego
+const PREFERRED_VOICES = [
+  "Daniel", "Kate", "Serena", "Arthur", "Martha",      // Apple, brytyjskie
+  "Google UK English Female", "Google UK English Male", // Chrome
+  "Samantha", "Google US English",                      // amerykańskie
+];
+let englishVoice = null;
+
+function pickVoice() {
+  const voices = speechSynthesis.getVoices().filter((v) => /^en[-_]/i.test(v.lang));
+  englishVoice =
+    PREFERRED_VOICES.map((name) => voices.find((v) => v.name.startsWith(name))).find(Boolean) ||
+    voices.find((v) => /^en[-_]GB/i.test(v.lang)) ||
+    voices[0] ||
+    null;
+}
+
+if (SPEECH_SUPPORTED) {
+  pickVoice();
+  // Lista głosów w niektórych przeglądarkach ładuje się z opóźnieniem
+  speechSynthesis.addEventListener("voiceschanged", pickVoice);
+}
+
+/* Czyta angielskie słowo na głos */
+function speak(text) {
+  if (!SPEECH_SUPPORTED) return;
+  speechSynthesis.cancel(); // przerwij poprzednie czytanie
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = englishVoice ? englishVoice.lang : "en-GB";
+  if (englishVoice) u.voice = englishVoice;
+  u.rate = SPEECH_RATE;
+
+  const btn = document.getElementById("speakBtn");
+  u.onstart = () => btn.classList.add("speaking");
+  u.onend = u.onerror = () => btn.classList.remove("speaking");
+  speechSynthesis.speak(u);
+}
+
+function icon(name, size = 20) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name]}</svg>`;
+}
+
+/* Wstawia ikony w elementy z atrybutem data-icon */
+function renderIcons(root = document) {
+  root.querySelectorAll("[data-icon]").forEach((el) => {
+    el.innerHTML = icon(el.dataset.icon, Number(el.dataset.size) || 20);
+  });
+}
+
+/* =========================================================
+   ZAPIS POSTĘPÓW – IndexedDB (baza w przeglądarce)
+   Magazyny:
+   - sessions: jedna sesja nauki {id, startedAt, endedAt, count, level, mode,
+               points, max, answered, finished}
+   - answers:  jedna odpowiedź na słowo {id, sessionId, word, at, level,
+               missing, attempts, result, typed}
+   - words:    lista słów {en, pl, active}; kluczem jest słowo angielskie
+   Gdy baza jest niedostępna (np. tryb prywatny), aplikacja działa bez zapisu.
+   ========================================================= */
+const DB_NAME = "slowka";
+const DB_VERSION = 2; // 2: doszedł magazyn „words"
+let dbPromise = null;
+
+function openDb() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve) => {
+    let req;
+    try {
+      req = indexedDB.open(DB_NAME, DB_VERSION);
+    } catch (e) {
+      return resolve(null);
+    }
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains("sessions")) {
+        db.createObjectStore("sessions", { keyPath: "id", autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains("answers")) {
+        const answers = db.createObjectStore("answers", { keyPath: "id", autoIncrement: true });
+        answers.createIndex("word", "word");
+        answers.createIndex("sessionId", "sessionId");
+      }
+      if (!db.objectStoreNames.contains("words")) {
+        // Pierwsze uruchomienie: wgrywamy słowa domyślne
+        const words = db.createObjectStore("words", { keyPath: "en" });
+        DEFAULT_WORDS.forEach((w) => words.put({ ...w, active: true }));
+      }
+    };
+    req.onsuccess = () => {
+      // Prośba, żeby przeglądarka nie usuwała danych przy braku miejsca
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+      resolve(req.result);
+    };
+    req.onerror = () => resolve(null);
+    req.onblocked = () => resolve(null);
+  });
+  return dbPromise;
+}
+
+/* Zamienia żądanie IndexedDB na Promise */
+function reqToPromise(req) {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/* Wykonuje operacje w jednej transakcji; zwraca wynik albo null przy błędzie */
+async function dbRun(storeNames, mode, fn) {
+  const db = await openDb();
+  if (!db) return null;
+  try {
+    const tx = db.transaction(storeNames, mode);
+    const done = new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+    const result = await fn(tx);
+    await done;
+    return result;
+  } catch (e) {
+    console.warn("IndexedDB:", e);
+    return null;
+  }
+}
+
+const Store = {
+  add: (store, value) => dbRun([store], "readwrite", (tx) => reqToPromise(tx.objectStore(store).add(value))),
+  put: (store, value) => dbRun([store], "readwrite", (tx) => reqToPromise(tx.objectStore(store).put(value))),
+
+  /* Zmiana pisowni słowa: nowy klucz w „words" i przepięcie historii odpowiedzi */
+  renameWord: (oldEn, word) =>
+    dbRun(["words", "answers"], "readwrite", (tx) => {
+      const words = tx.objectStore("words");
+      words.delete(oldEn);
+      words.put(word);
+      const req = tx.objectStore("answers").index("word").openCursor(IDBKeyRange.only(oldEn));
+      req.onsuccess = () => {
+        const cursor = req.result;
+        if (!cursor) return;
+        cursor.update({ ...cursor.value, word: word.en });
+        cursor.continue();
+      };
+      return true;
+    }),
+
+  /* Zapis wielu rekordów w jednej transakcji */
+  putMany: (store, values) =>
+    dbRun([store], "readwrite", (tx) => {
+      const s = tx.objectStore(store);
+      values.forEach((v) => s.put(v));
+      return true;
+    }),
+
+  remove: (store, key) => dbRun([store], "readwrite", (tx) => reqToPromise(tx.objectStore(store).delete(key)).then(() => true)),
+
+  /* Wszystkie dane: {sessions, answers, words} albo null, gdy baza niedostępna */
+  loadAll: () =>
+    dbRun(["sessions", "answers", "words"], "readonly", async (tx) => ({
+      sessions: await reqToPromise(tx.objectStore("sessions").getAll()),
+      answers: await reqToPromise(tx.objectStore("answers").getAll()),
+      words: await reqToPromise(tx.objectStore("words").getAll()),
+    })),
+
+  /* Zastępuje historię (import / reset); lista słów tylko gdy podano `words` */
+  replaceAll: (sessions, answers, words) =>
+    dbRun(["sessions", "answers", "words"], "readwrite", (tx) => {
+      const s = tx.objectStore("sessions");
+      const a = tx.objectStore("answers");
+      s.clear();
+      a.clear();
+      sessions.forEach((x) => s.put(x));
+      answers.forEach((x) => a.put(x));
+      if (words) {
+        const w = tx.objectStore("words");
+        w.clear();
+        words.forEach((x) => w.put(x));
+      }
+      return true;
+    }),
+};
+
+/* Wczytuje listę słów z bazy do WORDS; zwraca true, gdy baza działa */
+async function loadWords() {
+  const list = await dbRun(["words"], "readonly", (tx) => reqToPromise(tx.objectStore("words").getAll()));
+  if (!list) return false;
+  WORDS = list;
+  return true;
+}
+const wordsReady = loadWords(); // Promise<boolean> – czy lista słów jest w bazie
+
+/* =========================================================
+   OCENA OPANOWANIA SŁÓW – system pudełek Leitnera
+   Pudełko 0 = słowo nowe; pierwsza odpowiedź startuje z pudełka 1.
+   Dobrze za 1. razem → pudełko +1 (max 5), za 2./3. razem → bez zmian,
+   nie zgadnięte → z powrotem do pudełka 1.
+   ========================================================= */
+const MAX_BOX = 5;
+const MASTERED_BOX = 4;               // od tego pudełka słowo jest „opanowane"
+const BOX_WEIGHTS = [3, 6, 4, 3, 1.5, 1]; // waga losowania w trybie „Powtórka" (indeks = pudełko)
+
+const STATUSES = {
+  review:   { name: "Do powtórki", icon: "repeat",  tone: "danger" },
+  learning: { name: "W trakcie",   icon: "chart",   tone: "warning" },
+  mastered: { name: "Opanowane",   icon: "star",    tone: "success" },
+  fresh:    { name: "Nowe",        icon: "sparkle", tone: "neutral" },
+};
+
+function statusOf(box) {
+  if (box === 0) return "fresh";
+  if (box === 1) return "review";
+  if (box < MASTERED_BOX) return "learning";
+  return "mastered";
+}
+
+/* Statystyki każdego słowa z listy WORDS na podstawie historii odpowiedzi */
+function computeWordStats(answers) {
+  const stats = new Map(WORDS.map((w) => [w.en, { box: 0, seen: 0, firstOk: 0, lastAt: null }]));
+  answers
+    .slice()
+    .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
+    .forEach((a) => {
+      const s = stats.get(a.word);
+      if (!s) return; // słowo usunięte z listy
+      s.seen++;
+      if (a.result === 1) s.firstOk++;
+      s.lastAt = a.at;
+      let box = Math.max(1, s.box);
+      if (a.result === 1) box = Math.min(MAX_BOX, box + 1);
+      else if (a.result === 0) box = 1;
+      s.box = box;
+    });
+  return stats;
+}
+
+/* Etykiety głównego przycisku */
+const BTN_OK = `<span class="ico">${icon("check")}</span>Sprawdź`;
+const BTN_NEXT = `Dalej<span class="ico">${icon("arrow")}</span>`;
+
+/* ---------- Skróty do elementów ---------- */
+const $ = (id) => document.getElementById(id);
+const screens = {
+  start: $("startScreen"),
+  game: $("gameScreen"),
+  summary: $("summaryScreen"),
+  progress: $("progressScreen"),
+  words: $("wordsScreen"),
+};
+const okBtn = $("okBtn");
+
+/* ---------- Stan aplikacji ---------- */
+const settings = { count: 10, level: null, mode: "all" }; // mode: "all" | "review"
+let game = null;          // stan bieżącej sesji
+let autoNextTimer = null; // timer automatycznego przejścia dalej
+let positiveIndex = Math.floor(Math.random() * POSITIVE.length); // która ikona jest następna
+
+/* ---------- Narzędzia ---------- */
+function randInt(min, max) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function showScreen(name) {
+  Object.entries(screens).forEach(([key, el]) => el.classList.toggle("hidden", key !== name));
+  window.scrollTo(0, 0);
+}
+
+/* Polska odmiana: 1 próba, 2–4 próby, 5+ prób */
+function attemptsLeftText(n) {
+  if (n === 1) return "Została 1 próba.";
+  if (n >= 2 && n <= 4) return `Zostały ${n} próby.`;
+  return `Zostało ${n} prób.`;
+}
+
+/* Karta z komunikatem pod słowem (chip + tekst) */
+function setFeedback(tone, iconName, chipText, html) {
+  $("feedback").innerHTML = tone
+    ? `<div class="card tint"><span class="chip ${tone}"><span class="ico">${icon(iconName, 14)}</span>${chipText}</span><span>${html}</span></div>`
+    : "";
+}
+
+function setAttemptChip(tone, iconName, text) {
+  const chip = $("attemptChip");
+  chip.className = `chip ${tone}`;
+  chip.innerHTML = `<span class="ico">${icon(iconName, 14)}</span>${text}`;
+}
+
+/* =========================================================
+   LOSOWANIE PYTAŃ
+   ========================================================= */
+
+/* Kolejność słów: przetasowana lista; gdy pytań jest więcej niż słów,
+   lista jest tasowana ponownie (bez tego samego słowa dwa razy pod rząd). */
+function buildWordSequence(count) {
+  const seq = [];
+  let pool = [];
+  while (seq.length < count) {
+    if (pool.length === 0) {
+      pool = shuffle(activeWords());
+      const last = seq[seq.length - 1];
+      if (last && pool[0] === last && pool.length > 1) {
+        [pool[0], pool[1]] = [pool[1], pool[0]];
+      }
+    }
+    seq.push(pool.shift());
+  }
+  return seq;
+}
+
+/* Tworzy pytanie: losuje liczbę i pozycje brakujących liter (nigdy spacji). */
+function makeQuestion(word, level) {
+  const letterPositions = [...word.en]
+    .map((ch, i) => (ch === " " ? -1 : i))
+    .filter((i) => i >= 0);
+
+  // Co najmniej jedna litera musi zostać widoczna
+  const maxMissing = Math.max(1, Math.min(level, letterPositions.length - 1));
+  const howMany = randInt(1, maxMissing);
+  const missing = new Set(shuffle(letterPositions.slice()).slice(0, howMany));
+
+  return {
+    word,
+    missing,
+    attempts: 0,       // liczba wykonanych prób
+    firstWrong: false, // czy pierwsza próba była błędna
+    result: null,      // 1, 2, 3 = numer udanej próby; 0 = nie zgadnięte
+    typed: [],         // co zostało wpisane w kolejnych próbach (np. "rr", "r_")
+  };
+}
+
+/* Tryb „Powtórka": losowanie ważone – słowa do powtórki pojawiają się częściej,
+   opanowane rzadziej. Każde kolejne użycie słowa w sesji mocno obniża jego wagę,
+   a to samo słowo nigdy nie wypada dwa razy pod rząd. */
+function buildWeightedSequence(count, stats) {
+  const seq = [];
+  const used = new Map();
+  const pool = activeWords();
+  while (seq.length < count) {
+    const last = seq[seq.length - 1];
+    const candidates = pool.length > 1 ? pool.filter((w) => w !== last) : pool;
+    const weights = candidates.map(
+      (w) => BOX_WEIGHTS[stats.get(w.en).box] * Math.pow(0.3, used.get(w) || 0)
+    );
+    let r = Math.random() * weights.reduce((a, b) => a + b, 0);
+    let i = 0;
+    while (i < weights.length - 1 && r >= weights[i]) {
+      r -= weights[i];
+      i++;
+    }
+    seq.push(candidates[i]);
+    used.set(candidates[i], (used.get(candidates[i]) || 0) + 1);
+  }
+  return seq;
+}
+
+/* =========================================================
+   EKRAN STARTOWY
+   ========================================================= */
+$("levels").addEventListener("click", (e) => {
+  const btn = e.target.closest(".seg-btn");
+  if (!btn) return;
+  settings.level = Number(btn.dataset.level);
+  document.querySelectorAll("#levels .seg-btn").forEach((b) =>
+    b.setAttribute("aria-pressed", String(b === btn))
+  );
+  $("startError").textContent = "";
+});
+
+const MODE_HINTS = {
+  all: "Losowo ze wszystkich słów.",
+  review: "Częściej słowa do powtórki, rzadziej opanowane.",
+};
+
+$("modes").addEventListener("click", (e) => {
+  const btn = e.target.closest(".seg-btn");
+  if (!btn) return;
+  settings.mode = btn.dataset.mode;
+  document.querySelectorAll("#modes .seg-btn").forEach((b) =>
+    b.setAttribute("aria-pressed", String(b === btn))
+  );
+  $("modeHint").textContent = MODE_HINTS[settings.mode];
+});
+$("modeHint").textContent = MODE_HINTS[settings.mode];
+
+$("progressBtn").addEventListener("click", showProgress);
+
+$("startBtn").addEventListener("click", async () => {
+  const count = Number($("countInput").value);
+  const error = $("startError");
+
+  if (!Number.isInteger(count) || count < 1 || count > 100) {
+    error.textContent = "Podaj liczbę pytań od 1 do 100.";
+    return;
+  }
+  if (![1, 2, 3].includes(settings.level)) {
+    error.textContent = "Wybierz poziom trudności.";
+    return;
+  }
+
+  await wordsReady;
+  if (activeWords().length === 0) {
+    error.textContent = "Brak aktywnych słów – włącz je w „Liście słów”.";
+    return;
+  }
+
+  error.textContent = "";
+  settings.count = count;
+  startGame();
+});
+
+/* =========================================================
+   GRA
+   ========================================================= */
+let starting = false; // blokada podwójnego kliknięcia „Start"
+
+async function startGame() {
+  if (starting) return;
+  starting = true;
+
+  // Nowa kolejność pozytywnych ikon w każdej sesji
+  shuffle(POSITIVE);
+  positiveIndex = 0;
+
+  // Historia potrzebna do trybu „Powtórka" i do wykrycia nowo opanowanych słów
+  const saved = await Store.loadAll();
+  const prevAnswers = saved ? saved.answers : [];
+  const statsBefore = computeWordStats(prevAnswers);
+  const words =
+    settings.mode === "review"
+      ? buildWeightedSequence(settings.count, statsBefore)
+      : buildWordSequence(settings.count);
+
+  game = {
+    questions: words.map((w) => makeQuestion(w, settings.level)),
+    index: 0,
+    firstOk: 0,    // dobrze za 1. razem
+    firstWrong: 0, // źle za 1. razem
+    points: 0,
+    phase: "answering", // "answering" = czeka na odpowiedź, "done" = czeka na „Dalej"
+    inputs: [],
+    level: settings.level,
+    mode: settings.mode,
+    startedAt: new Date().toISOString(),
+    prevAnswers,
+    statsBefore,
+  };
+  // Zapis sesji w bazie; id będzie potrzebne przy zapisie odpowiedzi
+  game.sessionReady = Store.add("sessions", sessionRecord(game, false));
+
+  starting = false;
+  showScreen("game");
+  renderQuestion();
+}
+
+/* Dane sesji do zapisu w bazie */
+function sessionRecord(g, finished) {
+  return {
+    startedAt: g.startedAt,
+    endedAt: new Date().toISOString(),
+    count: g.questions.length,
+    level: g.level,
+    mode: g.mode,
+    points: g.points,
+    max: MAX_ATTEMPTS * g.questions.length,
+    answered: g.questions.filter((q) => q.result !== null).length,
+    finished,
+  };
+}
+
+/* Zapisy jednej sesji wykonywane po kolei (żeby np. „ukończona" nie wyprzedziło ostatniej odpowiedzi) */
+function enqueue(g, task) {
+  g.queue = (g.queue || Promise.resolve()).then(task).catch((e) => console.warn("Zapis:", e));
+  return g.queue;
+}
+
+/* Aktualizuje zapis sesji (punkty, czy ukończona) */
+function saveSession(g, finished) {
+  const record = sessionRecord(g, finished); // stan z chwili wywołania
+  return enqueue(g, async () => {
+    const id = await g.sessionReady;
+    if (id != null) await Store.put("sessions", { id, ...record });
+  });
+}
+
+/* Zapisuje odpowiedź na zakończone słowo */
+function recordAnswer(g, q) {
+  const answer = {
+    word: q.word.en,
+    at: q.finishedAt,
+    level: g.level,
+    missing: [...q.missing].sort((a, b) => a - b),
+    attempts: q.attempts,
+    result: q.result,
+    typed: q.typed.slice(),
+  };
+  enqueue(g, async () => {
+    const sessionId = await g.sessionReady;
+    if (sessionId != null) await Store.add("answers", { sessionId, ...answer });
+  });
+  saveSession(g, false);
+}
+
+function currentQuestion() {
+  return game.questions[game.index];
+}
+
+$("quitBtn").addEventListener("click", () => {
+  if (!confirm("Zakończyć lekcję? Odpowiedzi udzielone do tej pory zostaną zapisane w postępach.")) return;
+  clearTimeout(autoNextTimer);
+  saveSession(game, false);
+  showScreen("start");
+});
+
+/* Liczniki na górze ekranu */
+function updateStats() {
+  $("questionText").textContent = `Pytanie ${game.index + 1} z ${game.questions.length}`;
+  $("firstOkText").textContent = `${game.firstOk} dobrze`;
+  $("firstWrongText").textContent = `${game.firstWrong} źle`;
+  $("pointsText").textContent = `${game.points} pkt`;
+  updateProgress();
+}
+
+/* Pasek postępu: zielony = za 1. razem, złoty = za 2./3. razem,
+   czerwony = niezgadnięte, mech = bieżące pytanie */
+function updateProgress() {
+  const bar = $("progress");
+  bar.classList.toggle("dense", game.questions.length > 30);
+  bar.innerHTML = game.questions
+    .map((q, i) => {
+      let cls = "seg-p";
+      if (q.result === 1) cls += " r1";
+      else if (q.result === 2 || q.result === 3) cls += " r23";
+      else if (q.result === 0) cls += " r0";
+      else if (i === game.index) cls += " current";
+      return `<div class="${cls}"></div>`;
+    })
+    .join("");
+}
+
+/* Rysuje słowo: kafelki z literami i okienka w miejscach brakujących liter */
+function renderQuestion() {
+  clearTimeout(autoNextTimer);
+  const q = currentQuestion();
+  const wordEl = $("word");
+  wordEl.innerHTML = "";
+  game.inputs = [];
+  game.phase = "answering";
+
+  [...q.word.en].forEach((ch, i) => {
+    if (ch === " ") {
+      const sp = document.createElement("span");
+      sp.className = "space";
+      wordEl.appendChild(sp);
+    } else if (q.missing.has(i)) {
+      const input = document.createElement("input");
+      input.className = "slot";
+      input.type = "text";
+      input.maxLength = 1;
+      input.autocomplete = "off";
+      input.setAttribute("autocapitalize", "off");
+      input.setAttribute("autocorrect", "off");
+      input.spellcheck = false;
+      input.dataset.answer = ch.toLowerCase();
+      input.setAttribute("aria-label", "brakująca litera");
+      attachInputHandlers(input);
+      wordEl.appendChild(input);
+      game.inputs.push(input);
+    } else {
+      const span = document.createElement("span");
+      span.className = "tile";
+      span.textContent = ch;
+      wordEl.appendChild(span);
+    }
+  });
+
+  $("titleAccent").textContent = q.missing.size === 1 ? "brakującą literę" : "brakujące litery";
+  $("hint").textContent = q.word.pl;
+  setAttemptChip("neutral", "clock", `Próba 1 z ${MAX_ATTEMPTS}`);
+  setFeedback(null);
+  okBtn.innerHTML = BTN_OK;
+  okBtn.classList.remove("good", "bad");
+
+  updateStats();
+  fitWord();
+  game.inputs[0].focus();
+}
+
+/* Dopasowuje rozmiar kafelków, żeby całe słowo zmieściło się w karcie */
+function fitWord() {
+  if (!game || screens.game.classList.contains("hidden")) return;
+  const q = currentQuestion();
+  const chars = [...q.word.en];
+  // Szerokość w jednostkach kafelka: litera 1, spacja 0.4, odstępy 0.14
+  const units = chars.reduce((sum, ch) => sum + (ch === " " ? 0.4 : 1), 0) + 0.14 * (chars.length - 1);
+  const available = $("word").clientWidth;
+  const size = Math.max(20, Math.min(56, Math.floor(available / units)));
+  $("word").style.setProperty("--t", size + "px");
+}
+window.addEventListener("resize", fitWord);
+
+/* Obsługa wpisywania liter w okienka */
+function attachInputHandlers(input) {
+  // Zaznaczenie zawartości – nowa litera zastępuje starą
+  input.addEventListener("focus", () => input.select());
+
+  input.addEventListener("input", () => {
+    // Tylko litery angielskie, zawsze jedna (niektóre klawiatury ignorują maxlength)
+    const letters = input.value.replace(/[^a-zA-Z]/g, "");
+    input.value = letters.slice(-1).toLowerCase();
+    input.classList.remove("wrong");
+    input.classList.toggle("filled", input.value !== "");
+    if (input.value) focusNeighbour(input, +1);
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onOkClick();
+    } else if (e.key === "Backspace" && !input.value) {
+      e.preventDefault();
+      focusNeighbour(input, -1);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      focusNeighbour(input, -1);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      focusNeighbour(input, +1);
+    }
+  });
+}
+
+/* Przenosi fokus do następnego/poprzedniego aktywnego okienka */
+function focusNeighbour(input, dir) {
+  const list = game.inputs;
+  for (let i = list.indexOf(input) + dir; i >= 0 && i < list.length; i += dir) {
+    if (!list[i].disabled) {
+      list[i].focus();
+      return;
+    }
+  }
+}
+
+/* Przycisk głośnika – wymowa bieżącego słowa */
+$("speakBtn").addEventListener("click", () => {
+  speak(currentQuestion().word.en);
+  // Fokus wraca do okienka, żeby dziecko mogło od razu pisać dalej
+  if (game.phase === "answering") {
+    const next = game.inputs.find((inp) => !inp.disabled && !inp.value) || game.inputs.find((inp) => !inp.disabled);
+    if (next) next.focus();
+  } else {
+    okBtn.focus(); // Enter dalej działa jak „Dalej"
+  }
+});
+if (!SPEECH_SUPPORTED) {
+  $("speakBtn").disabled = true;
+  $("speakBtn").title = "Ta przeglądarka nie obsługuje czytania na głos";
+}
+
+/* Przycisk Sprawdź / Dalej */
+okBtn.addEventListener("click", onOkClick);
+
+/* Enter poza okienkami (np. po poprawnej odpowiedzi) też działa jak Sprawdź/Dalej */
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || screens.game.classList.contains("hidden")) return;
+  const tag = e.target.tagName;
+  if (tag === "INPUT" || tag === "BUTTON") return; // obsłużone gdzie indziej
+  e.preventDefault();
+  onOkClick();
+});
+
+function onOkClick() {
+  if (!game) return;
+  if (game.phase === "answering") checkAnswer();
+  else nextQuestion();
+}
+
+/* Sprawdzenie odpowiedzi */
+function checkAnswer() {
+  const q = currentQuestion();
+
+  // Kolor przycisku wraca do neutralnego przed kolejnym sprawdzeniem
+  okBtn.classList.remove("good", "bad");
+  void okBtn.offsetWidth; // wymusza przerysowanie, żeby podświetlenie było widać ponownie
+
+  q.attempts++;
+  q.typed.push(game.inputs.map((inp) => inp.value.toLowerCase() || "_").join(""));
+  const allCorrect = game.inputs.every((inp) => inp.value.toLowerCase() === inp.dataset.answer);
+
+  if (allCorrect) {
+    // Poprawnie: 3 / 2 / 1 punkt w zależności od próby
+    const gain = MAX_ATTEMPTS - q.attempts + 1;
+    q.result = q.attempts;
+    game.points += gain;
+    if (q.attempts === 1) game.firstOk++;
+
+    game.inputs.forEach((inp) => {
+      inp.disabled = true;
+      inp.classList.remove("wrong");
+      inp.classList.add("ok");
+    });
+    okBtn.classList.add("good");
+    okBtn.innerHTML = BTN_NEXT;
+    setAttemptChip("success", "check", `Za ${q.attempts}. razem`);
+    setFeedback("success", "check", "Dobrze",
+      `Świetnie! <strong>${q.word.en}</strong> to ${esc(q.word.pl)}. +${gain} pkt`);
+    showCelebration();
+    speak(q.word.en); // utrwalenie: słowo czytane na głos po poprawnej odpowiedzi
+    finishQuestion();
+    autoNextTimer = setTimeout(nextQuestion, AUTO_NEXT_MS);
+  } else {
+    if (q.attempts === 1) {
+      q.firstWrong = true;
+      game.firstWrong++;
+    }
+    okBtn.classList.add("bad");
+
+    if (q.attempts < MAX_ATTEMPTS) {
+      // Kolejna szansa: poprawne litery zostają (zablokowane), błędne i puste są czyszczone
+      let firstToFix = null;
+      game.inputs.forEach((inp) => {
+        if (inp.value.toLowerCase() === inp.dataset.answer) {
+          inp.disabled = true;
+          inp.classList.add("ok");
+        } else {
+          inp.value = "";
+          inp.classList.remove("filled");
+          inp.classList.add("wrong");
+          if (!firstToFix) firstToFix = inp;
+        }
+      });
+      setAttemptChip("neutral", "clock", `Próba ${q.attempts + 1} z ${MAX_ATTEMPTS}`);
+      setFeedback("warning", "warning", "Nie tak", attemptsLeftText(MAX_ATTEMPTS - q.attempts));
+      firstToFix.focus();
+    } else {
+      // Trzecia błędna próba: 0 punktów, pokazujemy poprawne słowo
+      q.result = 0;
+      game.inputs.forEach((inp) => {
+        inp.disabled = true;
+        if (inp.value.toLowerCase() !== inp.dataset.answer) inp.classList.add("wrong");
+      });
+      setAttemptChip("danger", "warning", `${MAX_ATTEMPTS} z ${MAX_ATTEMPTS} prób`);
+      setFeedback("danger", "cross", "Koniec prób",
+        `Poprawnie: <strong>${highlightMissing(q)}</strong>`);
+      okBtn.innerHTML = BTN_NEXT;
+      speak(q.word.en); // dziecko słyszy poprawne słowo
+      finishQuestion();
+    }
+  }
+  updateStats();
+}
+
+/* Poprawne słowo z podkreślonymi brakującymi literami */
+function highlightMissing(q) {
+  return [...q.word.en].map((ch, i) => (q.missing.has(i) ? `<u>${ch}</u>` : ch)).join("");
+}
+
+/* Pokazuje na cały ekran kolejną pozytywną ikonę z listy (rotacja) */
+function showCelebration() {
+  const item = POSITIVE[positiveIndex];
+  positiveIndex = (positiveIndex + 1) % POSITIVE.length;
+
+  const el = $("celebrate");
+  $("celebrateIcon").textContent = item.icon;
+  $("celebrateText").textContent = item.text;
+  el.classList.remove("show");
+  void el.offsetWidth; // restart animacji
+  el.classList.add("show");
+}
+
+/* Słowo zakończone – zapis do historii i czekanie na „Dalej" */
+function finishQuestion() {
+  game.phase = "done";
+  const q = currentQuestion();
+  q.finishedAt = new Date().toISOString();
+  recordAnswer(game, q);
+  okBtn.focus();
+}
+
+function nextQuestion() {
+  clearTimeout(autoNextTimer);
+  if (game.phase !== "done") return;
+  game.index++;
+  if (game.index >= game.questions.length) showSummary();
+  else renderQuestion();
+}
+
+/* =========================================================
+   PODSUMOWANIE
+   ========================================================= */
+function praiseFor(percent) {
+  if (percent === 100) return "Perfekcyjnie! Wszystko bezbłędnie!";
+  if (percent >= 85) return "Świetnie! Brawo!";
+  if (percent >= 65) return "Bardzo dobrze! Tak trzymaj!";
+  if (percent >= 40) return "Dobra robota! Poćwicz jeszcze trochę.";
+  return "Nie poddawaj się – następnym razem pójdzie lepiej!";
+}
+
+function showSummary() {
+  const qs = game.questions;
+  const max = MAX_ATTEMPTS * qs.length;
+  const percent = Math.round((game.points / max) * 100);
+  const countResult = (r) => qs.filter((q) => q.result === r).length;
+
+  $("sumPoints").innerHTML = `${game.points} z ${max}<small>pkt · ${percent}%</small>`;
+  $("sumBar").style.width = percent + "%";
+  $("sumPraise").textContent = praiseFor(percent);
+
+  const stats = [
+    ["check", "var(--success)", "Za 1. razem", countResult(1)],
+    ["clock", "var(--sun)", "Za 2. razem", countResult(2)],
+    ["clock", "var(--warning)", "Za 3. razem", countResult(3)],
+    ["cross", "var(--danger)", "Niezgadnięte", countResult(0)],
+  ];
+  $("sumStats").innerHTML = stats
+    .map(([ic, color, label, value]) => `
+      <div class="stat">
+        <span class="ico-wrap" style="color: ${color}">${icon(ic, 16)}</span>
+        <div><div class="stat-label">${label}</div><div class="stat-value">${value}</div></div>
+      </div>`)
+    .join("");
+
+  // Lista słów z pomyłką (bez duplikatów)
+  const list = $("sumMistakes");
+  list.innerHTML = "";
+  const seen = new Set();
+  qs.filter((q) => q.firstWrong).forEach((q) => {
+    if (seen.has(q.word.en)) return;
+    seen.add(q.word.en);
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="en">${esc(q.word.en)}</span><span class="pl">${esc(q.word.pl)}</span>`;
+    list.appendChild(li);
+  });
+  if (seen.size === 0) {
+    list.innerHTML = '<li><span class="none">Brak pomyłek!</span></li>';
+  }
+
+  // Nowo opanowane słowa: porównanie pudełek przed sesją i po niej
+  const sessionAnswers = qs
+    .filter((q) => q.result !== null)
+    .map((q) => ({ word: q.word.en, result: q.result, at: q.finishedAt }));
+  const statsAfter = computeWordStats(game.prevAnswers.concat(sessionAnswers));
+  const newlyMastered = WORDS.filter(
+    (w) => (game.statsBefore.get(w.en)?.box ?? 0) < MASTERED_BOX && statsAfter.get(w.en).box >= MASTERED_BOX
+  );
+  const mastered = $("sumMastered");
+  mastered.classList.toggle("hidden", newlyMastered.length === 0);
+  mastered.innerHTML = `
+    <div class="title"><span class="ico">${icon("star")}</span>Nowe opanowane słowa</div>
+    <div class="word-chips">${newlyMastered.map((w) => wordChip(w, "success")).join("")}</div>`;
+
+  saveSession(game, true);
+  showScreen("summary");
+}
+
+/* Chip ze słowem */
+function wordChip(word, tone, title = word.pl) {
+  return `<span class="chip ${tone}" title="${esc(title)}">${esc(word.en)}</span>`;
+}
+
+/* =========================================================
+   EKRAN POSTĘPÓW
+   ========================================================= */
+function formatDate(iso) {
+  return new Date(iso).toLocaleString("pl-PL", {
+    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+  });
+}
+
+async function showProgress() {
+  showScreen("progress");
+  const body = $("progressBody");
+  body.innerHTML = '<p class="caption" style="margin-top: 24px;">Wczytywanie…</p>';
+
+  const data = await Store.loadAll();
+  if (!data) {
+    body.innerHTML = `<div class="card" style="margin-top: 24px;">
+      <p style="margin: 0;">Zapisywanie postępów nie działa w tej przeglądarce (np. w trybie prywatnym).</p></div>`;
+    return;
+  }
+
+  const stats = computeWordStats(data.answers);
+  // Postępy liczone dla aktywnych słów
+  const active = activeWords();
+  const inactiveCount = WORDS.length - active.length;
+  const groups = { review: [], learning: [], mastered: [], fresh: [] };
+  active.forEach((w) => groups[statusOf(stats.get(w.en).box)].push(w));
+  const masteredPct = active.length ? Math.round((groups.mastered.length / active.length) * 100) : 0;
+  const practiced = active.length - groups.fresh.length;
+
+  // Karta główna: ile słów opanowanych
+  let html = `
+    <div class="card deep hero">
+      <span class="kicker"><span class="ico">${icon("star", 16)}</span>Opanowane słowa</span>
+      <div class="score">${groups.mastered.length} z ${active.length}<small>· ${masteredPct}%</small></div>
+      <div class="track"><div class="bar" style="width: ${masteredPct}%"></div></div>
+      <div class="hero-note">Sesje: ${data.sessions.length} · Ćwiczone słowa: ${practiced} · Odpowiedzi: ${data.answers.length}${
+        inactiveCount ? ` · Nieaktywne słowa: ${inactiveCount}` : ""}</div>
+    </div>`;
+
+  // Słowa według statusu
+  html += `<h2 class="section-title"><span class="ico">${icon("list")}</span>Słowa</h2>`;
+  ["review", "learning", "mastered", "fresh"].forEach((key) => {
+    const st = STATUSES[key];
+    const words = groups[key];
+    if (words.length === 0) return;
+    html += `
+      <div class="card status-card">
+        <div class="status-head">
+          <span class="name"><span class="chip ${st.tone}"><span class="ico">${icon(st.icon, 14)}</span>${st.name}</span></span>
+          <span class="count">${words.length}</span>
+        </div>
+        <div class="word-chips">${words
+          .map((w) => {
+            const s = stats.get(w.en);
+            const title = s.seen
+              ? `${w.pl} · ćwiczone ${s.seen}× · za 1. razem ${s.firstOk}×`
+              : w.pl;
+            return wordChip(w, "neutral", title);
+          })
+          .join("")}</div>
+      </div>`;
+  });
+
+  // Ostatnie sesje
+  const sessions = data.sessions
+    .filter((s) => s.answered > 0)
+    .sort((a, b) => (a.startedAt < b.startedAt ? 1 : -1))
+    .slice(0, 10);
+  html += `<h2 class="section-title"><span class="ico">${icon("clock")}</span>Ostatnie sesje</h2>`;
+  if (sessions.length === 0) {
+    html += `<div class="card"><p class="caption" style="margin: 0;">Jeszcze nie ma zapisanych sesji. Zagraj pierwszą!</p></div>`;
+  } else {
+    html += `<div class="card" style="padding: 0;"><ul class="history">${sessions
+      .map((s) => {
+        const pct = s.max ? Math.round((s.points / s.max) * 100) : 0;
+        const details = [
+          `Poziom ${s.level}`,
+          `${s.answered} z ${s.count} pytań`,
+          s.mode === "review" ? "Powtórka" : "Wszystkie",
+          s.finished ? "" : "przerwana",
+        ].filter(Boolean).join(" · ");
+        return `
+          <li>
+            <div class="row">
+              <span class="when">${formatDate(s.startedAt)}</span>
+              <span class="score">${s.points}/${s.max}<small>${pct}%</small></span>
+            </div>
+            <div class="mini-track"><div class="mini-bar" style="width: ${pct}%"></div></div>
+            <span class="caption">${details}</span>
+          </li>`;
+      })
+      .join("")}</ul></div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+$("progressBack").addEventListener("click", () => showScreen("start"));
+
+/* Eksport postępów do pliku JSON */
+$("exportBtn").addEventListener("click", async () => {
+  const data = await Store.loadAll();
+  if (!data) return alert("Zapisywanie postępów nie działa w tej przeglądarce.");
+  const json = JSON.stringify(
+    { app: "slowka", version: 2, exportedAt: new Date().toISOString(), ...data },
+    null,
+    2
+  );
+  const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `slowka-postepy-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+/* Import postępów z pliku JSON (zastępuje obecne dane) */
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+    if (data.app !== "slowka" || !Array.isArray(data.sessions) || !Array.isArray(data.answers)) throw new Error();
+  } catch (err) {
+    return alert("To nie jest plik z eksportu postępów.");
+  }
+  // Starsze eksporty (wersja 1) nie mają listy słów – wtedy obecna lista zostaje
+  const words = Array.isArray(data.words) ? data.words.filter((w) => w && typeof w.en === "string" && w.en) : null;
+  const msg = `Zastąpić obecne postępy danymi z pliku?\n(${data.sessions.length} sesji, ${data.answers.length} odpowiedzi` +
+    (words ? `, ${words.length} słów)` : ")");
+  if (!confirm(msg)) return;
+  const ok = await Store.replaceAll(data.sessions, data.answers, words);
+  if (!ok) alert("Nie udało się wczytać danych.");
+  await loadWords();
+  showProgress();
+});
+
+/* Usunięcie całej historii */
+$("resetBtn").addEventListener("click", async () => {
+  if (!confirm("Na pewno usunąć wszystkie zapisane postępy? Tej operacji nie można cofnąć.")) return;
+  await Store.replaceAll([], []);
+  showProgress();
+});
+
+/* =========================================================
+   LISTA SŁÓW – dodawanie, usuwanie, włączanie / wyłączanie
+   ========================================================= */
+let wordsDbOk = true; // czy zmiany listy są zapisywane w bazie
+
+async function showWords() {
+  wordsDbOk = await wordsReady;
+  showScreen("words");
+  renderWordsList();
+}
+
+function renderWordsList() {
+  const activeCount = activeWords().length;
+  $("wordsSummary").textContent =
+    `Aktywne: ${activeCount} z ${WORDS.length}. Nieaktywne słowa nie są losowane w grze.` +
+    (wordsDbOk ? "" : " Uwaga: ta przeglądarka nie zapisuje zmian – znikną po zamknięciu strony.");
+
+  if (WORDS.length === 0) {
+    $("wordsList").innerHTML = `<div class="card" style="margin-top: 24px;">
+      <p class="caption" style="margin: 0;">Lista jest pusta. Dodaj słowo albo przywróć słowa domyślne.</p></div>`;
+    return;
+  }
+
+  // Jedna lista, alfabetycznie
+  const words = WORDS.slice().sort((a, b) => a.en.localeCompare(b.en));
+  $("wordsList").innerHTML = `
+    <h2 class="section-title"><span class="ico">${icon("list")}</span>Słowa<span class="count">${activeCount} / ${WORDS.length}</span></h2>
+    <div class="card" style="padding: 0;"><ul class="word-rows">${words
+      .map((w) => {
+        const isOn = w.active !== false;
+        const en = esc(w.en);
+        const cls = [isOn ? "" : "inactive", w.en === editingEn ? "editing" : ""].join(" ").trim();
+        return `
+        <li class="${cls}">
+          <div class="wtext"><span class="en">${en}</span><span class="pl">${esc(w.pl)}</span></div>
+          <div class="row-actions">
+            <button type="button" class="iconbtn ghost edit" data-edit="${en}" aria-label="Edytuj ${en}">${icon("pencil", 18)}</button>
+            <label class="switch" title="${isOn ? "Aktywne" : "Nieaktywne"}">
+              <input type="checkbox" data-toggle="${en}" ${isOn ? "checked" : ""} aria-label="Aktywne: ${en}">
+              <span></span>
+            </label>
+            <button type="button" class="iconbtn ghost" data-delete="${en}" aria-label="Usuń ${en}">${icon("trash", 18)}</button>
+          </div>
+        </li>`;
+      })
+      .join("")}</ul></div>`;
+}
+
+/* Włączanie / wyłączanie słowa */
+$("wordsList").addEventListener("change", async (e) => {
+  const en = e.target.dataset.toggle;
+  if (!en) return;
+  const word = WORDS.find((w) => w.en === en);
+  if (!word) return;
+  word.active = e.target.checked;
+  await Store.put("words", word);
+  renderWordsList();
+});
+
+/* Edycja i usuwanie słowa */
+$("wordsList").addEventListener("click", async (e) => {
+  const editBtn = e.target.closest("[data-edit]");
+  if (editBtn) return startEditing(editBtn.dataset.edit);
+
+  const btn = e.target.closest("[data-delete]");
+  if (!btn) return;
+  const en = btn.dataset.delete;
+  if (!confirm(`Usunąć słowo „${en}”?\nHistoria odpowiedzi zostanie zachowana – jeśli dodasz je ponownie, postępy wrócą.`)) return;
+  if (en === editingEn) stopEditing();
+  WORDS = WORDS.filter((w) => w.en !== en);
+  await Store.remove("words", en);
+  renderWordsList();
+});
+
+/* ---------- Formularz: dodawanie albo edycja ---------- */
+let editingEn = null; // słowo w trakcie edycji (null = tryb dodawania)
+
+function updateFormMode() {
+  const editing = editingEn !== null;
+  $("formTitle").innerHTML = `<span class="ico">${icon(editing ? "pencil" : "plus")}</span>` +
+    (editing ? `Edytuj słowo „${esc(editingEn)}”` : "Dodaj słowo");
+  $("addSubmit").innerHTML = `<span class="ico">${icon(editing ? "check" : "plus")}</span>` +
+    (editing ? "Zapisz zmiany" : "Dodaj");
+  $("cancelEdit").classList.toggle("hidden", !editing);
+  $("addError").textContent = "";
+}
+
+function startEditing(en) {
+  const word = WORDS.find((w) => w.en === en);
+  if (!word) return;
+  editingEn = en;
+  $("newEn").value = word.en;
+  $("newPl").value = word.pl;
+  updateFormMode();
+  renderWordsList();
+  $("addWordForm").scrollIntoView({ behavior: "smooth", block: "center" });
+  $("newPl").focus({ preventScroll: true });
+}
+
+function stopEditing() {
+  editingEn = null;
+  $("newEn").value = "";
+  $("newPl").value = "";
+  updateFormMode();
+}
+
+$("cancelEdit").addEventListener("click", () => {
+  stopEditing();
+  renderWordsList();
+});
+
+const normalizeEn = (s) => s.trim().toLowerCase().replace(/\s+/g, " ");
+const normalizePl = (s) => s.trim().replace(/\s+/g, " ");
+
+/* Sprawdza słowo przed zapisem; zwraca {field, msg} albo null, gdy wszystko w porządku.
+   `original` = edytowane słowo (może zachować swoją pisownię). */
+function validateWord(en, pl, original = null) {
+  if (!/^[a-z]+( [a-z]+)*$/.test(en)) return { field: "en", msg: "Słowo angielskie może zawierać tylko litery a–z i spacje." };
+  if (en.replace(/ /g, "").length < 2) return { field: "en", msg: "Słowo musi mieć co najmniej 2 litery." };
+  if (en.length > 30) return { field: "en", msg: "Słowo angielskie może mieć najwyżej 30 znaków." };
+  if (WORDS.some((w) => w.en === en && w !== original)) return { field: "en", msg: `Słowo „${en}” już jest na liście.` };
+  if (!pl) return { field: "pl", msg: "Wpisz polskie tłumaczenie." };
+  if (pl.length > 60) return { field: "pl", msg: "Tłumaczenie może mieć najwyżej 60 znaków." };
+  return null;
+}
+
+$("addWordForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const error = $("addError");
+  const en = normalizeEn($("newEn").value);
+  const pl = normalizePl($("newPl").value);
+  const original = editingEn !== null ? WORDS.find((w) => w.en === editingEn) : null;
+
+  const problem = validateWord(en, pl, original);
+  if (problem) {
+    error.textContent = problem.msg;
+    return $(problem.field === "en" ? "newEn" : "newPl").focus();
+  }
+
+  if (original) {
+    // Edycja; przy zmianie pisowni historia odpowiedzi przechodzi na nowe słowo
+    const updated = { en, pl, active: original.active !== false };
+    if (en !== original.en) await Store.renameWord(original.en, updated);
+    else await Store.put("words", updated);
+    WORDS = WORDS.map((w) => (w === original ? updated : w));
+    stopEditing();
+    renderWordsList();
+    return;
+  }
+
+  const word = { en, pl, active: true };
+  WORDS.push(word);
+  await Store.put("words", word);
+  error.textContent = "";
+  $("newEn").value = "";
+  $("newPl").value = "";
+  renderWordsList();
+  $("newEn").focus();
+});
+
+/* ---------- Dodawanie wielu słów naraz (wklejony tekst) ----------
+   Jedna linia = jedno słowo: „angielski, polski". Dzielimy na PIERWSZYM
+   przecinku, więc tłumaczenie może zawierać kolejne przecinki
+   („cherry, wiśnia, czereśnia"). Działa też średnik i tabulator
+   (np. kolumny skopiowane z arkusza). */
+function parseBulk(text) {
+  const seen = new Set();
+  const items = [];
+  text.split(/\r?\n/).forEach((raw, i) => {
+    if (!raw.trim()) return;
+    const item = { line: i + 1, raw: raw.trim() };
+    const m = raw.match(/^([^,;\t]*)[,;\t](.*)$/);
+    if (!m) {
+      item.error = "Brak przecinka między słowem a tłumaczeniem.";
+    } else {
+      item.en = normalizeEn(m[1]);
+      item.pl = normalizePl(m[2]);
+      const problem = validateWord(item.en, item.pl);
+      if (problem) item.error = problem.msg;
+      else if (seen.has(item.en)) item.error = `Słowo „${item.en}” powtarza się w tekście.`;
+      seen.add(item.en);
+    }
+    items.push(item);
+  });
+  return items;
+}
+
+/* Licznik pod polem: ile linii jest gotowych, ile z błędami */
+function updateBulkCount() {
+  const items = parseBulk($("bulkText").value);
+  const ok = items.filter((it) => !it.error).length;
+  const bad = items.length - ok;
+  $("bulkCount").textContent = items.length
+    ? `Gotowe do dodania: ${ok}` + (bad ? ` · Z błędami: ${bad}` : "")
+    : "";
+  $("bulkSubmit").disabled = ok === 0;
+}
+$("bulkText").addEventListener("input", () => {
+  $("bulkResult").innerHTML = "";
+  updateBulkCount();
+});
+
+$("bulkSubmit").addEventListener("click", async () => {
+  const items = parseBulk($("bulkText").value);
+  const ok = items.filter((it) => !it.error);
+  const bad = items.filter((it) => it.error);
+  if (ok.length === 0) return;
+
+  const words = ok.map((it) => ({ en: it.en, pl: it.pl, active: true }));
+  WORDS.push(...words);
+  await Store.putMany("words", words);
+
+  // W polu zostają tylko linie z błędami – do poprawienia
+  $("bulkText").value = bad.map((it) => it.raw).join("\n");
+  $("bulkResult").innerHTML =
+    `<div class="bulk-ok"><span class="ico">${icon("check", 16)}</span>Dodano ${ok.length} ${plural(ok.length, "słowo", "słowa", "słów")}.</div>` +
+    (bad.length
+      ? `<div class="bulk-bad"><span class="ico">${icon("warning", 16)}</span>Pominięto ${bad.length} – popraw je w polu powyżej:</div>
+         <ul class="bulk-errors">${bad
+           .map((it) => `<li><strong>„${esc(it.raw)}”</strong> – ${esc(it.error)}</li>`)
+           .join("")}</ul>`
+      : "");
+  updateBulkCount();
+  renderWordsList();
+});
+
+/* Polska odmiana liczebników: 1 słowo, 2–4 słowa, 5+ słów (12–14 też „słów") */
+function plural(n, one, few, many) {
+  if (n === 1) return one;
+  const d = n % 10, t = n % 100;
+  return d >= 2 && d <= 4 && !(t >= 12 && t <= 14) ? few : many;
+}
+
+/* Przywraca słowa domyślne, których brakuje na liście (np. po usunięciu) */
+$("restoreBtn").addEventListener("click", async () => {
+  const missing = DEFAULT_WORDS.filter((d) => !WORDS.some((w) => w.en === d.en));
+  if (missing.length === 0) return alert("Wszystkie słowa domyślne są już na liście.");
+  if (!confirm(`Dodać z powrotem ${missing.length} słów domyślnych?`)) return;
+  for (const d of missing) {
+    const word = { ...d, active: true };
+    WORDS.push(word);
+    await Store.put("words", word);
+  }
+  renderWordsList();
+});
+
+updateFormMode();
+
+$("wordsBtn").addEventListener("click", showWords);
+$("wordsBack").addEventListener("click", () => showScreen("start"));
+
+$("againBtn").addEventListener("click", startGame);
+$("settingsBtn").addEventListener("click", () => showScreen("start"));
+
+renderIcons();
+</script>
+</body>
+</html>
